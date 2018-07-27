@@ -1,0 +1,136 @@
+# -*- mode: autoconf -*-
+
+# Process this file with autoconf to produce a configure script.
+
+AC_PREREQ(2.13)
+AC_INIT
+#AC_INIT(JetAnalyzer, 0.0, Arbin Timilsina <arbint@iastate.edu>)
+AM_INIT_AUTOMAKE(JetAnalyzer, 1.00)
+#AC_CONFIG_SRCDIR([macro/test_run.sh])
+#AM_CONFIG_HEADER([config.h])
+#AC_CONFIG_MACRO_DIR([m4])
+AC_CANONICAL_BUILD
+AC_CANONICAL_HOST
+AC_CANONICAL_TARGET
+
+AM_INIT_AUTOMAKE([1.6 foreign])
+
+AC_SUBST(ROOTSYS)
+AC_SUBST(OFFLINE_MAIN)
+AC_ARG_WITH(rootsys,
+	    [  --with-root=PFX         Prefix where ROOT is installed (optional)],
+	    ROOTSYS="${withval}")
+
+# Checks for programs.
+# AC_PROG_INTEL
+AC_PROG_CXX
+AC_LANG(C++)
+AC_F77_WRAPPERS
+
+AC_ENABLE_STATIC(no)
+AC_PROG_LIBTOOL
+
+PACKAGE_INCLUDE_DIR=AC_PACKAGE_NAME
+AC_SUBST(PACKAGE_INCLUDE_DIR)
+
+# Checks for libraries.
+
+# Version requirements
+SDL_VERSION=1.2.0
+MKL_VERSION=8.1
+
+## NCG
+CXXFLAGS="$CXXFLAGS -DHAVE_ROOT=1 -DHAVE_PHENIX=1 -DHAVE_LZO2=1 -DHAVE_CGAL=1 -DHAVE_FASTJET=1 -DHAVE_SSE=1 -DHAVE_SSE2=1"
+##
+
+## NCG
+#AC_DEFINE(HAVE_PPMD_J, 1,
+#              [Define to 1 if PPMd var. J is available])
+#CPPFLAGS="$CPPFLAGS -D_LARGEFILE64_SOURCE"
+# GNU NANA
+##
+
+## NCG
+#AC_CHECK_HEADERS(openssl/sha.h, [
+#    AC_DEFINE(HAVE_OPENSSL, 1,
+#	      [Define to 1 if OpenSSL is available])
+#    LIBS="$LIBS -lssl"
+#])
+##
+
+## NCG
+## GNU NANA
+#AC_CHECK_HEADERS(nana.h, [
+#    AC_DEFINE(HAVE_NANA, 1,
+#	      [Define to 1 if GNU NANA is available])
+#    LIBS="$LIBS -lnana"
+#])
+##
+
+# Check for ROOT
+AC_PATH_PROG(ROOT_CONFIG, root-config, no, [$PATH])
+AC_PATH_PROG(ROOTCINT, rootcint , no, [$PATH])
+if test "$ROOT_CONFIG" != "no"; then
+   ## NCG
+#   AC_DEFINE(HAVE_ROOT, 1,
+#	      [Define to 1 if ROOT is available])
+    ROOT_CFLAGS="`$ROOT_CONFIG --cflags`"
+    #ROOT_LDFLAGS="-Wl,-rpath,`$ROOT_CONFIG --libdir`"
+    ROOT_LDFLAGS=""
+    ROOT_LIBS="`$ROOT_CONFIG --libs`"
+    CXXFLAGS="$CXXFLAGS $ROOT_CFLAGS"
+    #LDFLAGS="$LDFLAGS $ROOT_LDFLAGS"
+    #LIBS="$LIBS $ROOT_LIBS"
+    AC_SUBST(ROOT_CONFIG)
+    AC_SUBST(ROOTCINT)
+    AC_SUBST(ROOT_CFLAGS)
+    AC_SUBST(ROOT_LDFLAGS)
+    AC_SUBST(ROOT_LIBS)
+fi
+
+if test -n "$OFFLINE_MAIN"; then
+   ## NCG
+#    AC_DEFINE(HAVE_PHENIX, 1,
+#	      [Define to 1 if PHENIX Offline is available])
+   ##
+    OFFLINE_CPPFLAGS="-I$OFFLINE_MAIN/include"
+    #OFFLINE_LDFLAGS="-L$OFFLINE_MAIN/lib -Wl,-rpath,$OFFLINE_MAIN/lib"
+    OFFLINE_LDFLAGS="-L$OFFLINE_MAIN/lib"
+    CPPFLAGS="$CPPFLAGS $OFFLINE_CPPFLAGS"
+    LDFLAGS="$LDFLAGS $OFFLINE_LDFLAGS"
+    AC_SUBST(OFFLINE_CPPFLAGS)
+    AC_SUBST(OFFLINE_LDFLAGS)
+    ## NCG
+#    # LZO 2.x
+#    AC_DEFINE(HAVE_LZO2, 1,
+#	      [Define to 1 if LZO 2.x is available])
+    ##
+    LIBS="$LIBS -llzo2"
+    ## NCG
+#    AC_DEFINE(HAVE_CGAL, 1,
+#	      [Define to 1 if CGAL is available])
+#    AC_DEFINE(HAVE_FASTJET, 1,
+#	      [Define to 1 if FastJet is available])
+    ##
+    LIBS="$LIBS -lSISConePlugin -lsiscone -lfastjet -lCGAL -lCGAL_Core"
+fi
+
+if test "${CXX}" = "icpc"; then
+    CXXFLAGS="$CXXFLAGS -xW -no-prec-div -ip"
+    CXXFLAGS="$CXXFLAGS -w2 -wd161,191,383,593,810,869,981,1418,1419"
+elif test "${CXX}" = "g++" -o "${CXX}" = "g++34"; then
+    CXXFLAGS="$CXXFLAGS -mfpmath=sse -msse -msse2"
+    CXXFLAGS="$CXXFLAGS -Wall -Wno-unknown-pragmas -Wno-unused -fno-strict-aliasing -Werror"
+fi
+if test "${F77}" = "ifort"; then
+    FFLAGS="$FFLAGS -warn all"
+fi
+
+AM_CONDITIONAL(
+    LIBTOOL_1_X,
+    test x`libtool --version | sed "s/.*(GNU libtool) //;s/\..*//;1q"` = x1)
+
+AC_CONFIG_FILES([
+    Makefile
+])
+AC_OUTPUT

@@ -1,0 +1,279 @@
+//General PHENIX tools
+#include "getClass.h"
+#include "PHCompositeNode.h"
+#include "phool.h"
+#include "RunHeader.h"
+
+//Fun4All tools
+#include "Fun4AllServer.h"
+#include "Fun4AllHistoManager.h"
+#include "Fun4AllReturnCodes.h"
+
+//C tools
+#include <cstdlib>
+
+//  Root tools
+#include "TH1.h"
+#include "TH2.h"
+#include <TFile.h>
+#include "TVector3.h"
+#include "TLorentzVector.h"
+#include <TNtuple.h>
+
+
+//  Data classes I am using in analysis
+#include "PHCentralTrack.h"
+#include "PHGlobal.h"
+#include "EventHeader.h"
+#include "PreviousEvent.h"
+#include "emcClusterContainer.h"
+#include "emcClusterContent.h"
+
+//My source file
+#include "RunQA.h"
+
+using namespace std;
+using namespace findNode;
+
+//================================ Constructor ================================
+//Here we can initiate some variables
+
+RunQA::RunQA(string _outfilename)
+    : SubsysReco("RunQA"),
+      verbo(1),
+      outfname(_outfilename)
+{
+
+    outfile = new TFile(outfname.c_str(), "RECREATE");
+
+    nRunEvents = 0;
+
+    runVertex = 0.0;
+    runCentrality = 0.0;
+
+    nTracksT = 0;
+    nTracksQ = 0;
+    nTracksE = 0;
+    nTracksW = 0;
+
+    for (int i = 0; i < NARMSECTS; i++)
+        {
+            nEMCalHits[i] = 0;
+        }
+
+
+    //Run QA histograms
+    hEvents         = new TH1F("hEvents", "Total events",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+
+    hVertex         = new TH1F("hVertex", "Total fabs(vertex)",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+    hCentrality     = new TH1F("hCentrality", "Total Centrality",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+
+    hTracksT        = new TH1F("hTracksT", "Total tracks",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+    hTracksQ        = new TH1F("hTracksQ", "Total Quality tracks, quality == 63 || 31",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+    hTracksE        = new TH1F("hTracksE", "Total tracks (East arm)",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+    hTracksW        = new TH1F("hTracksW", "Total tracks (West arm)",
+                               RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+
+
+    for (int armsect = 0; armsect  < NARMSECTS; armsect ++)
+        {
+            hEMCalHits[armsect] = new TH1F(Form("hEMCalHits_Armsect%i", armsect), Form("hEMCalHits_Armsect%i", armsect),
+                                           RUN_BIN, IRUN_NUMBER, FRUN_NUMBER);
+        }
+
+    return;
+}
+
+int RunQA::Init(PHCompositeNode *topNode)
+{
+    if (verbo)
+        {
+            cout << ">>>>>>>>>>>>>>>>>>>  Init called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+        }
+
+    return 0;
+}
+
+int RunQA::InitRun(PHCompositeNode *topNode)
+{
+    if (verbo)
+        {
+            cout << ">>>>>>>>>>>>>>>>>>>  InitRun called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+        }
+
+    RunHeader *run_header = getClass<RunHeader> (topNode, "RunHeader");
+    if (!run_header)
+        {
+            cout << "No RunHeader! No sense continuing" << endl;
+            exit(1);
+        }
+    runNumber = run_header->get_RunNumber();
+
+    return EVENT_OK;
+}
+
+int RunQA::process_event(PHCompositeNode *topNode)
+{
+    //  Get the data I need...
+    PHGlobal *phglobal                     = getClass<PHGlobal>                (topNode, "PHGlobal");
+    if (nRunEvents == 1 && !phglobal)
+        {
+            cout << "No PHGlobal!  No sense continuing" << endl;
+            exit(1);
+        }
+
+    PHCentralTrack *phcentral              = getClass<PHCentralTrack>          (topNode, "PHCentralTrack");
+    if (nRunEvents == 1 && !phcentral)
+        {
+            cout << "No PHCentral!  No sense continuing" << endl;
+            exit(1);
+        }
+
+    emcClusterContainer *emcclustercontainer = getClass<emcClusterContainer>      (topNode, "emcClusterContainer");
+    if (nRunEvents == 1 && !emcclustercontainer)
+        {
+            cout << "No emcClusterContainer!  No sense continuing" << endl;
+            exit(1);
+        }
+
+
+    float zvertex = phglobal->getBbcZVertex();
+    if (fabs(zvertex) > 10.0)
+        {
+            return DISCARDEVENT;
+        }
+
+    runVertex += fabs(zvertex);
+
+    float centrality = phglobal->getCentrality();
+    runCentrality += centrality;
+
+    nRunEvents++;
+
+    // Informational message...
+    if (nRunEvents % 1000 == 0 && verbosity)
+        {
+            if (verbo)
+                {
+                    cout << "Events for run " << runNumber << " = " << nRunEvents << endl;
+                }
+        }
+
+    // Fill the histograms...
+    for (unsigned int i = 0; i < phcentral->get_npart(); i++)
+        {
+            int quality         = phcentral->get_quality(i); // Quality of the Drift Chamber Tracks
+            int arm             = phcentral->get_dcarm(i); //Arm containing the track (East=0, West=1)
+            float mom           = phcentral->get_mom(i); // Magnitude of the momentum.
+            float theta0        = phcentral->get_the0(i); //The track's theta direction at the vertex
+            float pT            = mom * sin(theta0);
+
+            if(pT < 0.5)
+                {
+                    continue;
+                }
+
+            nTracksT++;
+
+            if (quality == 63 || quality == 31)
+                {
+                    nTracksQ++;
+                }
+
+            if (arm == 0)
+                {
+                    nTracksE++;
+                }
+            if (arm == 1)
+                {
+                    nTracksW++;
+                }
+        }
+
+    //Data in emcClusterContainer
+    //The number of towers is 48(y) x 96(z) x 2(PbGl) + 36(y) x 72(z) x 6(PbSc) = 9216+15552 = 24768.
+    //Tower ID is a unique ID of all towers in eight sectors (0~24767).
+    int Nclus = emcclustercontainer->size();
+
+    for (int iclus = 0; iclus < Nclus; iclus++)
+        {
+            emcClusterContent* clus = emcclustercontainer->getCluster(iclus);
+            int arm      = clus->arm(); //In EMCal convention, West Arm is 0 and East Arm is 1, and thus armsector 0...7 are W0...W3 E0...E3
+            int sector   = clus->sector();
+            int armsect  = (arm * 4) + sector;
+            float ecore  = clus->ecore();
+
+            if(ecore > 0.5)
+                {
+                    nEMCalHits[armsect]++;
+                }
+        }
+    // any other return code might lead to aborting the event or analysis
+    return 0;
+}
+
+int RunQA::EndRun(const int runNumber)
+{
+    if (verbo)
+        {
+            cout << ">>>>>>>>>>>>>>>>>>>  EndRun called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+        }
+
+    hEvents->SetBinContent(runNumber - IRUN_NUMBER + 1, nRunEvents);
+
+    hVertex->SetBinContent(runNumber - IRUN_NUMBER + 1, runVertex);
+    hCentrality->SetBinContent(runNumber - IRUN_NUMBER + 1, runCentrality);
+
+    hTracksT->SetBinContent(runNumber - IRUN_NUMBER + 1, nTracksT);
+    hTracksQ->SetBinContent(runNumber - IRUN_NUMBER + 1, nTracksQ);
+    hTracksE->SetBinContent(runNumber - IRUN_NUMBER + 1, nTracksE);
+    hTracksW->SetBinContent(runNumber - IRUN_NUMBER + 1, nTracksW);
+
+    for (int armsect = 0; armsect < NARMSECTS; armsect++)
+        {
+            hEMCalHits[armsect]->SetBinContent(runNumber - IRUN_NUMBER + 1, nEMCalHits[armsect]);
+        }
+
+    if (verbo)
+        {
+            cout << "+++++++++++++  Statistics:     +++++++++++++++++++" << endl;
+            cout << "Run number:                                          " << runNumber << endl;
+            cout << "Number of total events for this run:                 " << nRunEvents << endl << endl;
+
+            cout << "Average vertex for this run:                         " << runVertex / (float)nRunEvents << endl;
+            cout << "Average centrality for this run:                     " << runCentrality / (float)nRunEvents << endl << endl;
+
+            cout << "Number of total tracks for this run:                 " << nTracksT << endl;
+            cout << "Number of quality tracks for this run:               " << nTracksQ << endl;
+            cout << "Number of tracks in East arm for this run:           " << nTracksE << endl;
+            cout << "Number of tracks in West arm for this run:           " << nTracksW << endl << endl;
+        }
+    return 0;
+}
+
+int RunQA::End(PHCompositeNode *topNode)
+{
+    if (verbo)
+        {
+            cout << ">>>>>>>>>>>>>>>>>>>  End called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+        }
+
+    outfile->Write(outfname.c_str());
+    outfile->Close();
+
+    return 0;
+}
+
+
+
+
+
+
+
+

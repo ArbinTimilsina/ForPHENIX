@@ -1,0 +1,15 @@
+elgev = 200.0
+ref = CMS
+chproj = A
+chtarg = A
+n1 = 197
+iz1 = 79
+n2 = 197
+iz2 = 79
+bmin = 0
+bmax = 25
+iseed = 1
+iseed_skip = 0
+jet_trigger = 0
+pthard = 0.0
+history = 0

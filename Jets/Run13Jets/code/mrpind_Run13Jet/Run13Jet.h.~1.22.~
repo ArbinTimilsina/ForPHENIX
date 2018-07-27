@@ -1,0 +1,402 @@
+#ifndef __RUN13JET_H__
+#define __RUN13JET_H__
+
+//Data classes I am using in analysis
+#include <SubsysReco.h>
+class PHCentralTrack;
+class PHGlobal;
+class EventHeader;
+
+//Root tools
+#include <TMath.h>
+class TFile;
+class TTree;
+class TNtuple;
+class TH1F;
+class TH2F;
+
+//For Trigger
+class ErtOut;
+class TriggerHelper;
+class TrigLvl1;
+class emcClusterContainer;
+class emcClusterContent;
+class RunHeader;
+
+class PHCompositeNode;
+
+#define VERTEX_CUT 30
+#define TRACK_MIN_PT_CUT 0.2
+#define CLUSTER_MIN_ENERGY_CUT 0.5
+#define NARMSECT 8
+
+#define RUN_BIN 11376
+#define IRUN_NUM 386773
+#define FRUN_NUM 398149
+
+//pT bins
+const int NPTBINS = 15;//25 WAS OLD BINNING
+const float PTBINS[NPTBINS + 1] =
+  { 
+    8.0000, 9.2383, 10.6682, 12.3194, 14.2262, 16.4282, 18.9710, 21.9074, 25.2982, 
+    29.2139, 33.7357, 38.9574, 44.9873, 51.9505, 59.9915, 69.2771
+  };
+/*  OLD BINNING
+  {
+    5.0000, 5.4824, 6.0113, 6.5913, 7.2272, 7.9245, 8.6890, 9.5273, 10.4465, 11.4543, 12.5594, 13.7711,
+    15.0998, 16.5566, 18.1539, 19.9054, 21.8258, 23.9315, 26.2404, 28.7720, 31.5479, 34.5915, 37.9289,
+    41.5882, 45.6005, 50.0000
+  };
+*/
+namespace fastjet
+{
+  class JetDefinition;
+}
+
+typedef struct
+{
+
+  float runnumber;
+  float eventnumber;
+  float mom;
+  float theta;
+  float pT;
+  float eta;
+  float phi;
+  float phiDC;
+  float zedDC;
+  float alpha;
+  float energy;
+  float board;
+
+  int charge;
+  int quality;
+  int n0;
+  int arm;
+  int armsect;
+  int emcid;
+
+  float px;
+  float py;
+  float pz;
+  float eT;
+
+  float pc3dphi;
+  float pc3dz;
+  float pc3sdphi;
+  float pc3sdz;
+  float emcdphi;
+  float emcdz;
+  float emcsdphi;
+  float emcsdz;
+
+  bool inBrokenX1;
+  bool inBrokenX2;
+  bool inBrokenUV;
+  bool x1Used;
+  bool x2Used;
+  bool uvUsed;
+  bool passDC;
+  bool passQuality;
+  bool passMatching;
+  bool passFirst;
+
+} tracks;
+
+
+typedef struct
+{
+  int arm;
+  int sector;
+  int armsect;
+  int emcid;
+  int yTowerPos;
+  int zTowerPos;
+  int towerId;
+  //int ert4x4Bit;
+
+  bool ertFired;
+
+  float runnumber;
+  float eventnumber;
+  float energy;
+  float theta;
+  float pT;
+  float eT;
+  float phi;
+  float px;
+  float py;
+  float pz;
+  float eta;
+  float chi2;
+  float prob;
+  float tof;
+
+  bool passIsValid;
+  bool passNotHot;
+  bool passNotDead;
+  bool passNotUncalib;
+  bool passNotBad;
+  bool passEnergy;
+  bool passEverything;
+
+} clusters;
+
+
+typedef struct
+{
+
+  int arm;
+  int charge;
+
+  float energy;
+  float mom;
+  float pT;
+  float eT;
+  float px;
+  float py;
+  float pz;
+  float eta;
+  float phi;
+  float phiDC;
+
+  bool ertTrigger;
+
+  int id;
+  float jetPt;
+
+} particles;
+
+typedef struct
+{
+
+  int armsect;
+  float pT;
+  float eta;
+  float phi;
+  bool ertTrigger;
+
+} photons;
+
+typedef struct
+{
+  int arm;
+
+  float pT;
+  float eta;
+  float phi;
+  float nc;
+  float cf;
+  // float disc;
+
+  float qaLevel;
+  float fillNumber;
+  float crossingShift;
+  float bpol;
+  float ypol;
+  float bpolerror;
+  float ypolerror;
+  float bspin;
+  float yspin;
+  float spinPattern;
+  float lvl1trig_clk_cross;
+
+} jets;
+
+class Run13Jet: public SubsysReco
+{
+ public:
+  Run13Jet(std::string outfilename);
+  virtual ~Run13Jet() {}
+
+  //  For this analysis we only use following:
+  int Init         (PHCompositeNode *topNode);
+  int InitRun      (PHCompositeNode *topNode);
+  int process_event(PHCompositeNode *topNode);
+  int ResetEvent   (PHCompositeNode *topNode);
+  int End          (PHCompositeNode *topNode);
+  int EndRun       (const int runNumber);
+
+  void GetTracks   (PHCompositeNode *topNode, std::vector<tracks>& track_list);
+  void GetClusters (PHCompositeNode *topNode, std::vector<clusters>& cluster_list, float vertex);
+  void GetParticles(PHCompositeNode *topNode, std::vector<tracks>& charged_particle_list,
+		    std::vector<clusters>& neutral_particle_list, float vertex, float t0, bool isData = true);
+		      
+  void InitHistograms();
+
+  void InitTrees(bool writeTrees);
+  void FillTrees(bool writeTrees);
+  bool goodRun(int runnumber);
+  bool lowRate(int runnumber);
+  void setMB(bool what);
+  void setData(bool isData);
+
+  float phiReduce(float phi);
+
+  enum type1_enum{DPHI, DZ};
+  enum type2_enum{INITIAL, INTERMEDIATE, FINAL};
+
+ protected:
+  const int verbo;
+  const std::string outfname;
+  const bool writeTree;
+  bool isMB;
+  bool isData;
+  bool ertTriggerFired;
+
+  TFile* outfile;
+
+  PHGlobal *phglobal;
+  EventHeader *evtheader;
+  ErtOut *ertOut;
+  TriggerHelper *triggerHelper;
+  TrigLvl1 *lvl1trigger;
+  emcClusterContent *clus;
+  RunHeader *run_header;
+
+  float zVertex;
+  static const float goodRunArray[780];
+  static const float lowRateRuns[67];
+
+  //For general information
+  unsigned int runNumber;
+  unsigned int eventNumber;
+
+  unsigned long long int nTotalEvents;
+  unsigned long long int nGoodEvents;
+  unsigned long long int nGoodEvents_low;
+  unsigned long long int nGoodEvents_high;
+
+  unsigned int nPassFirst;
+  unsigned int nPassDcPcGhost;
+  unsigned int nPassDcPcConversion;
+  unsigned int nPassPairCut;
+  unsigned int nPassConversionEdge;
+  unsigned int nPassConversionElectron;
+  unsigned int nPassConversionEcore;
+  unsigned int nPassConversion;
+  unsigned int nChargedParticles;
+  unsigned int nNeutralParticles;
+  
+  unsigned int nJets;
+
+  bool isLowRate;
+
+  float inEdge(float phi0)
+  {
+    return ((phi0 > -0.65 && phi0 < -0.49) ||
+	    (phi0 > 0.89 && phi0 < 1.05) ||
+            (phi0 > 2.10 && phi0 < 2.26) ||
+	    (phi0 > 3.62 && phi0 < 3.78));
+  }
+
+  //List of tracks, clusters and jets
+  //std::vector<tracks> tracks_list;
+  //std::vector<clusters> clusters_list;
+
+  TTree *tJets;
+  std::vector<jets> jets_list;
+
+  //list of particles
+  std::vector<tracks> charged_particles;
+  std::vector<clusters> neutral_particles;
+
+  //for ERT trigger
+  static const int ERT_BIT_MASK_A = 0x00000080;
+  static const int ERT_BIT_MASK_B = 0x00000040;
+  static const int ERT_BIT_MASK_C = 0x00000100;
+
+  //for MB trigger
+  static const int MB_BIT = 0X00000010;
+
+  //Histograms
+  TH2F *hDphiDzAllC;
+  TH2F *hDphiDzDiffC;
+  TH2F *hDphiDzSameC;
+  TH1F *hDphi;
+  TH1F *hDz;
+
+  TH2F *hDphiDzAllC0;
+  TH2F *hDphiDzDiffC0;
+  TH2F *hDphiDzSameC0;
+  TH1F *hDphi0;
+  TH1F *hDz0;
+
+  TH2F *hDphiDzAllC1;
+  TH2F *hDphiDzDiffC1;
+  TH2F *hDphiDzSameC1;
+  TH1F *hDphi1;
+  TH1F *hDz1;
+  
+  TH1F *hTOF_allsect;
+  TH1F *hTOF_allsect_low;
+  TH1F *hTOF_allsect_high;
+  
+  TH1F *hTOF_allsect_0;
+  TH1F *hTOF_allsect_low_0;
+  TH1F *hTOF_allsect_high_0;
+
+  TH1F *hTOF_allsect_1;
+  TH1F *hTOF_allsect_low_1;
+  TH1F *hTOF_allsect_high_1;
+
+  TH1F *hTOF[8];
+  TH1F *hTOF_good[8];
+  TH1F *hTOF_bad[8];
+
+  TH1F *hVertex;
+  TH1F *hVertex_low;
+  TH1F *hVertex_high;
+  TH1F *hEvents;
+
+  TH1F *hPC3dphi;
+  TH1F *hPC3dz;
+
+  TH1F *hEMCdphi;
+  TH1F *hEMCdz;
+
+  TH2F *hTowerE;
+  TH1F *hClustersTower;
+  TH2F* hSectorHits[NARMSECT];
+
+  TH1F *hCf;
+  TH1F *hCf_low;
+  TH1F *hCf_high;
+  TH1F *hCf_14;
+  TH1F *hCf_low_14;
+  TH1F *hCf_high_14;
+  TH1F *hCf_10;
+  TH1F *hCf_low_10;
+  TH1F *hCf_high_10;
+  TH1F *hCf_12;
+  TH1F *hCf_low_12;
+  TH1F *hCf_high_12;
+  TH1F *hJets;
+  TH1F *hJets_low;
+  TH1F *hJets_high;
+
+  TH1F *hCf_0;
+  TH1F *hCf_low_0;
+  TH1F *hCf_high_0;
+  TH1F *hJets_0;
+  TH1F *hJets_low_0;
+  TH1F *hJets_high_0;
+
+  TH1F *hCf_1;
+  TH1F *hCf_low_1;
+  TH1F *hCf_high_1;
+  TH1F *hJets_1;
+  TH1F *hJets_low_1;
+  TH1F *hJets_high_1;
+
+  TH1F *hEffectiveEvents;
+  TH1F *hEffectiveEvents_low;
+  TH1F *hEffectiveEvents_high;
+
+  TH2F *hERTscdwnVsRun;
+  TH2F *hMuVsRun;
+  TH2F *hEffectiveEventsVsRun;
+
+};
+
+#endif

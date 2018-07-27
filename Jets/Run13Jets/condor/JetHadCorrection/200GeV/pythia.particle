@@ -1,0 +1,13 @@
+roots 200
+proj p
+targ p
+frame cms
+pytune 100
+msel 0
+msub 11 1
+msub 12 1
+msub 13 1
+msub 28 1
+msub 53 1
+msub 68 1
+ckin 3 8.0

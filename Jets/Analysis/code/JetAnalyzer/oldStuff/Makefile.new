@@ -1,0 +1,33 @@
+ACLOCAL_AMFLAGS = -I m4
+# -*- mode: makefile; -*-
+
+lib_LTLIBRARIES = libJetAnalyzer.la
+
+mydatadir = $(datadir)/$(PACKAGE_INCLUDE_DIR)
+dist_mydata_DATA = calibration/tof_high_limit_arrays  calibration/tof_low_limit_arrays  calibration/tof_status_arrays
+
+#####################################################################
+
+libJetAnalyzer_la_SOURCES = JetAnalyzer.C JetAnalyzer_Dict.C 
+
+libJetAnalyzer_la_CPPFLAGS = -D_LARGEFILE64_SOURCE @OFFLINE_CPPFLAGS@
+
+libJetAnalyzer_la_LDFLAGS = @ROOT_LDFLAGS@ @OFFLINE_LDFLAGS@
+libJetAnalyzer_la_LIBADD = -ljetevent @ROOT_LIBS@ \
+	-L$(libdir) \
+	-L$(OFFLINE_MAIN)/lib \
+	-lSubsysReco \
+	-lfun4all -lrecal -lCNT -lCrkPID -lert -lspin -ltec -llvl2 \
+	-lTOAD
+
+noinst_HEADERS = JetAnalyzer.h JetAnalyzerLinkDef.h
+
+include_HEADERS =
+
+%_dict.C:	%.h %LinkDef.h
+	$(ROOTCINT) -f $@ -c $(libJetAnalyzer_la_CPPFLAGS) $^
+
+CLEANFILES = *_dict.C *_dict.h *~ *~
+
+clean-master:
+	rm -r *_dict.* Makefile.in config.* configure lib* ltmain.sh Makefile aclocal.m4 m4 depcomp *~ autom4te.cache  install-sh missing .deps .libs *root macro/*root macro/*~ stamp-h1

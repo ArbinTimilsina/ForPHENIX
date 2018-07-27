@@ -1,0 +1,13 @@
+Library.vector<Double_t>:                   libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.vector<Int_t>:                      libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfold:                          libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldBayes:                     libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldSvd:                       libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldBinByBin:                  libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldResponse:                  libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldErrors:                    libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldParms:                     libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldInvert:                    libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldTUnfold:                   libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.RooUnfoldDagostini:                 libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so
+Library.TSVDUnfold:                         libRooUnfold.so libHist.so libGraf.so libTree.so libMatrix.so libMathCore.so libCore.so

@@ -1,0 +1,74 @@
+#!/usr/local/bin/perl
+
+use Time::HiRes qw (sleep);
+use strict;
+
+my $segments = 33000;
+print "\nRunning over $segments segments.\n\n";
+sleep(1);
+
+my $R = 0.2;
+print "R-parameter is $R\n\n";
+sleep(1);
+
+my $minPt = 6.59;
+print "Min pt is: $minPt (GeV/c)\n\n";
+sleep(1);
+
+my $nc = 3.0;
+my $minCf = 0.2;
+my $maxCf = 0.7;
+print "For default: nc>=$nc, minCf=$minCf, maxCf=$maxCf\n\n";
+sleep(1);
+
+my $analyzerDir = "/direct/phenix+hhj/arbint/JetSimulation/JetAnalyzerSim/Analyzer/PP";
+my $containerDir = "/direct/phenix+hhj/arbint/JetSimulation/JetAnalyzerSim/Container/PP";
+
+print "Writing out events to dir: $analyzerDir\n\n";
+sleep(2);
+
+my $counter = 0.0;
+
+my $ii = 0;
+for($ii=0;$ii<$segments;$ii++) {
+#    if($counter>500){next;}
+
+    $counter++;
+    print "Total count is: $counter\n\n";
+
+    my $aDir = "JetAnalyzerSim_$ii";
+    my $cDir = "JetContainerAnalyzer_$ii";
+    print "\n************************************\n";
+    print "Making directory $aDir\n\n";
+    system("cd $analyzerDir; rm -rf $aDir; mkdir -p $aDir");
+
+#Create JetAnalyzerSim.cmd script
+    print "Creating JetAnalyzerSim.cmd\n";
+    open (JETANALYZERSIM_CMD, ">$analyzerDir/$aDir/JetAnalyzerSim.cmd");
+    print JETANALYZERSIM_CMD "#!/bin/csh\n";
+    print JETANALYZERSIM_CMD "source /etc/csh.login\n";
+    print JETANALYZERSIM_CMD "foreach i (/etc/profile.d/\*.csh)\n";
+    print JETANALYZERSIM_CMD "     source \$i\n";
+    print JETANALYZERSIM_CMD "end\n";
+    print JETANALYZERSIM_CMD "source /opt/phenix/bin/phenix_setup.csh -n ana.475\n";
+    print JETANALYZERSIM_CMD "source /opt/phenix/bin/odbcini_setup.csh\n";
+    print JETANALYZERSIM_CMD "setenv LD_LIBRARY_PATH /direct/phenix\+u/arbint/Jets/Analysis/install/lib:\$\{LD_LIBRARY_PATH\}\n";
+    print JETANALYZERSIM_CMD "if (\$\?\_CONDOR_SCRATCH_DIR\) then\n";
+    print JETANALYZERSIM_CMD "set workDir = \$\{_CONDOR_SCRATCH_DIR\}\n";
+    print JETANALYZERSIM_CMD "endif\n";
+    print JETANALYZERSIM_CMD "cd \$workDir\n";
+    print JETANALYZERSIM_CMD "pwd\n";
+
+    print JETANALYZERSIM_CMD "ln -sf $containerDir/$cDir/JetContainerAnalyzer.root .\n";
+    print JETANALYZERSIM_CMD "ln -sf /direct/phenix+u/arbint/Jets/Analysis/code/JetSimulation/simMacros/runJetAnalyzerSim.C .\n";
+    print JETANALYZERSIM_CMD "root -l -q -b \"runJetAnalyzerSim.C($R, $minPt, $nc, $minCf, $maxCf, 0.2)\"\n";
+    close(JETANALYZERSIM_CMD);
+
+#Submit the job
+    system("cd $analyzerDir/$aDir; ln -sf /direct/phenix+u/arbint/Jets/Analysis/runCondor/JetSimulation/JetAnalyzerSim/Analyzer/JetAnalyzerSim.job");
+    system("cd $analyzerDir/$aDir; chmod a+x JetAnalyzerSim.cmd");
+    system("cd $analyzerDir/$aDir; condor_submit JetAnalyzerSim.job");
+
+#Sleep for 0.2 seconds
+    sleep(0.1);
+}

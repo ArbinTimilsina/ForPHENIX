@@ -1,0 +1,64 @@
+*  PISA kumac file for Central + Muon arms
+*
+SETRHIC 12 1                    ! Run12
+PISAFILE 'PISAEvent.root'
+*
+* Random number seeds (using internal GEANT seeds from 001 to 215)
+* keep the second input as 0 all the time, change only the first
+RNDM 001 0
+*
+* Tracking thresholds
+CUTS  .001 .001 .010 .010 .010 .001 .001 1.e+4 1.e+4 .010 4.e-7
+*
+FOUT 'phnx.dat.cZ'              ! Name of output hits file
+FPAR 'phnx.par'                 ! Name of namelist parameter file for geometry
+STEE 'KINE' 'HITS' 'DIGI'       ! Output data structure control
+DOUT 'DIGI'                     ! Output data structure control
+MAGF '3D++' 1.00 0001  0.0 0.0
+*
+* passive volumes. PIPN = new beam pipe; xxx check the new absorber RABS
+GEOP 'ENDC' 'CENT' 'PIPN' 'NOSE' 'PLUG' 'BCOL' 'PHSH' 'HBDS' 'RABS'
+*
+DCAY  1                         ! GEANT command for decay on
+ANNI  1                         ! GEANT command for annihilation on
+BREM  1                         ! GEANT command for bremsstrahlung on
+COMP  1                         ! GEANT command for Compton scattering on
+LOSS  2                         ! GEANT command for Landau fluctuations on
+DRAY  0                         ! GEANT command for Delta no ray (Landau is on)
+HADR  4                         ! GEANT command for hadrons using FLUKA
+MULS  1                         ! GEANT command for multiple scattering on
+PAIR  1                         ! GEANT command for pair production on
+PHOT  1                         ! GEANT command for photoelectric effect on
+MUNU  0                         ! GEANT recommendation when HADR 4 is used
+***************************************************************************
+*
+*	To install a detector turn the switch 'ON'
+*
+***************************************************************************
+*
+* central arm detectors
+*
+* FCL and ZDC are off by default except for dedicated simulations
+ZDC  'OFF' 'FULL' 'ETOT' 'FULL' 'ZCAL' 'FRG1' 'HB00' 37.89
+SVX  'ON' 'FULL' 'P_ID' 'FULL' 'ELEM' 'NEUT'    ! run11 VTX installed, but FVTX turned off in phnx.par
+
+* all other central arm detectors are ON by default
+BBC  'ON' 'FULL' 'ETOT' 'FULL' 'BCAL' 'STCK'    ! BBC on with track stack used
+ITR  'ON' 'IT96' 'ETOT' 'FULL' 'TRKS'           ! Latest version of Dch and PC1
+CRK  'ON' 'FULL' 'P_PZ' 'FULL' 'CCAL' 'CO2 '    ! RICH with CO2 radiator gas
+PAD  'ON' 'PC98' 'P_ID' 'FULL' 'PCAL'           ! Latest version of PC2/PC3
+AER  'ON' 'FULL' 'P_ID' 'FULL' 'ELEM'           ! This is the AER (aerogel counter)
+TFW  'ON' 'FULL' 'P_ID' 'FULL' 'ELEM'           ! This is the TFW (TOF-West)
+TRD  'ON' 'FULL' 'P_ID' 'FULL' 'TCAL'           ! This is the TEC turned off but the detector is still there
+TOF  'ON' 'FULL' 'P_ID' 'FULL' 'FCAL' 0.0 0.0   ! Time of Flight
+EMC  'ON' 'FULL' 'FULL' 'FULL' 'ECAL' 'AUAU' 'CTRK'  ! EMCal, H.I. with Cerenkov
+
+* forward rapidity (muon arms) detectors
+MUM  'OFF' 'FULL' 'ETOT' 'FULL' 'MCAL' 0. 0. 0. 'STCK' 'NNEU'  ! Muon trackers
+MUI  'OFF' 'FULL' 'ETOT' 'FULL' 'NCAL' 0. 0. 0. 'STCK' 'NNEU'  ! Muon identifier
+
+* MUPC is off by default because its an "upgrade" detector
+* MPC is off by default except for dedicated simulations
+MUPC 'OFF' 'FULL' 'P_ID' 'FULL' 'PCAL'          ! Pad chamber for Muon Trigger
+MPC  'OFF' 'FULL' 'P_ID' 'FULL' 'PCAL'          ! Muon Piston Calorimeter
+RLT  'OFF' 'FULL' 'P_ID' 'FULL' 'PCAL'          ! RPC

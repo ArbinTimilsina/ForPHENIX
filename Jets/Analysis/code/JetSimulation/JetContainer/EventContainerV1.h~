@@ -1,0 +1,47 @@
+#ifndef EVENTCONTAINERV1_H
+#define EVENTCONTAINERV1_H
+
+#include <EventContainer.h>
+
+class EventContainerV1 : public EventContainer
+{
+ public:
+    EventContainerV1();
+    virtual ~EventContainerV1();
+    void Reset();
+
+    void AddEntry(const iEvents events)
+    {
+	event_list.push_back(events);
+    }
+
+    unsigned int getSize() const
+    {
+	return event_list.size();
+    }
+
+    float getCentrality(unsigned int i) const
+    {
+	return event_list[i].centrality;
+    }
+    float getVertexPythia(unsigned int i) const
+    {
+	return event_list[i].zVertexPythia;
+    }
+    float getVertexPisaReco(unsigned int i) const
+    {
+	return event_list[i].zVertexPisaReco;
+    }
+    float getVertexData(unsigned int i) const
+    {
+	return event_list[i].zVertexData;
+    }
+
+ private:
+    std::vector<iEvents> event_list;
+
+    ClassDef(EventContainerV1, 1);
+};
+
+
+#endif

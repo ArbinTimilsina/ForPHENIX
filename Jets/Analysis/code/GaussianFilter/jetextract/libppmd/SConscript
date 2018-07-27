@@ -1,0 +1,11 @@
+# -*- mode: python; -*-
+
+import os
+
+Import('env')
+
+env.Prepend(CPPPATH = ['#'])
+env.Prepend(CPPPATH = [os.path.join('#', 'libppmd')])
+
+CPPPATH = env['CPPPATH']
+env.SharedLibrary('ppmd', ['Model.cc'])

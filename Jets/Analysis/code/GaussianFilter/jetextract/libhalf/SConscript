@@ -1,0 +1,18 @@
+# -*- mode: python; -*-
+
+import os
+
+Import('env')
+
+libhalf_env = env.Clone()
+
+libhalf_env.Prepend(CPPPATH = ['#'])
+libhalf_env.Prepend(CPPPATH = [os.path.join('#', 'libhalf')])
+
+filelist = ['half.cc']
+
+if '-ipo' in env['CXXFLAGS']:
+    env['LIBRARY_SOURCE'] += map(
+        lambda f: os.path.join('#', 'libhalf', f), filelist)
+else:
+    libhalf_env.StaticLibrary('half', filelist)

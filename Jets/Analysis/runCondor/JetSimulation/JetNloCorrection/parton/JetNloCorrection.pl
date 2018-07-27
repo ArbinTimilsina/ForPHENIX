@@ -1,0 +1,49 @@
+#!/usr/local/bin/perl                                                                                                                             
+use strict;
+
+my $segments = 45000;
+print "\nRunning over $segments segments.\n\n";
+sleep(1);
+
+my $nevents = 25000;
+print "\nNumber of events in each segment is: $nevents\n\n";
+sleep(1);
+
+my $evntdir = "/direct/phenix+scratch/arbint/JetNloCorrection/parton";
+
+print "Writing out events to dir: $evntdir\n\n";
+sleep(1);
+
+my $ii = 0;
+for($ii=0;$ii<$segments;$ii++) {
+    my $dir = "JetNloCorrection_$ii";
+    print "\n************************************\n";
+    print "Making directory $dir\n\n";
+    system("cd $evntdir; rm -rf $dir; mkdir -p $dir");
+
+#Set PYTHIA
+    print "Setting PYTHIA\n\n";
+
+    system("cd $evntdir/$dir; ln -sf /direct/phenix+u/arbint/Jets/Analysis/runCondor/JetSimulation/JetNloCorrection/parton/pythia.cfg");
+    system("cd $evntdir/$dir; echo \'#!/bin/csh\' >> JetNloCorrection.cmd");
+    system("cd $evntdir/$dir; echo \'source /opt/phenix/bin/odbcini_setup.csh\' >> JetNloCorrection.cmd");
+    system("cd $evntdir/$dir; echo \'cd $evntdir/$dir\' >> JetNloCorrection.cmd");
+    system("cd $evntdir/$dir; ln -sf /direct/phenix+u/arbint/Jets/Analysis/code/JetSimulation/simMacros/generatePythiaCommon.C");
+    system("cd $evntdir/$dir; echo \'root -l -q -b \"generatePythiaCommon.C($nevents)\"\' >> JetNloCorrection.cmd");
+
+#Set the code
+    print "Setting the code\n\n";
+    system("cd $evntdir/$dir; ln -sf /direct/phenix+u/arbint/Jets/Analysis/code/JetSimulation/simMacros/runJetNloCorrection.C");
+    system("cd $evntdir/$dir; echo \'root -l -q -b \"runJetNloCorrection.C()\"\' >> JetNloCorrection.cmd");
+
+#Want to delete large files
+    system("cd $evntdir/$dir; echo \'rm -rf dummyFile.root phpythia.root phpy_xsec.root\' >> JetNloCorrection.cmd");
+
+#Submit the job
+    system("cd $evntdir/$dir; ln -sf /direct/phenix+u/arbint/Jets/Analysis/runCondor/JetSimulation/JetNloCorrection/JetNloCorrection.job");
+    system("cd $evntdir/$dir; chmod a+x JetNloCorrection.cmd");
+    system("cd $evntdir/$dir; condor_submit JetNloCorrection.job");
+
+#Sleep for 1 seconds
+    sleep(1);
+}

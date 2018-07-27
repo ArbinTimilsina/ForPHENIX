@@ -1,0 +1,150 @@
+80     ncells
+23     ngusset 
+1      ti_switch    
+191.0  suppzlength 
+202.0  innerRadius 
+246.0  outerRadius 
+-33.75 phibotw     
+56.25  phitopw     
+123.75 phitope     
+213.75 phibote     
+0.3    planethick  
+4.50   uvangle     
+0.0025 winthickin  
+0.005  winthickout 
+1.2    supptiside  
+1.5    suppalside  
+27.0   suppzthick  
+1.5    supptibase  
+2.5    suppalbase  
+1.7    x1baserad   
+1.7    x2baserad   
+1.1    x1basez     
+1.1    x2basez     
+0.70   x1slotthick 
+0.70   x2slotthick 
+2.4    x1slotz     
+2.4    x2slotz     
+0.4    x1suppthick 
+0.4    x2suppthick 
+4.0    x1suppz     
+4.0    x2suppz     
+1.5    x1rextent   
+1.5    x2rextent   
+1.5    u1rextent   
+1.5    v1rextent   
+1.5    u2rextent   
+1.5    v2rextent   
+1.25   u1basez     
+1.25   v1basez     
+1.3    u2basez        
+1.3    v2basez        
+1.8    u1slotz        
+1.8    v1slotz        
+1.8    u2slotz        
+1.8    v2slotz        
+4.0    u1suppz        
+4.0    v1suppz        
+4.0    u2suppz        
+4.0    v2suppz        
+1.27   cfibinrad      
+2.0065 cfiboutrad     
+0.3    propregwidth   
+0.0975 zvsdfactor     
+0.2    guidewiresep   
+5.42   angleOfUV1Slots
+6.00   angleOfUV2Slots
+0.     dcwestxo
+0.     dcwestyo
+0.     dcwestzo
+0.     dceastxo
+0.     dceastyo
+0.     dceastzo
+0.     dcwestxa
+0.     dcwestya
+1.     dcwestza
+0.     dceastxa
+0.     dceastya
+1.     dceastza
+204.55	radiusAtExtremZ-00  
+205.15	radiusAtExtremZ-01  
+205.75	radiusAtExtremZ-02  
+206.35	radiusAtExtremZ-03  
+206.95	radiusAtExtremZ-04  
+207.55	radiusAtExtremZ-05  
+208.15	radiusAtExtremZ-06  
+208.75	radiusAtExtremZ-07  
+209.35	radiusAtExtremZ-08  
+209.95  radiusAtExtremZ-09  
+210.55	radiusAtExtremZ-10  
+211.15	radiusAtExtremZ-11  
+214.85	radiusAtExtremZ-12  
+215.45	radiusAtExtremZ-13  
+216.05	radiusAtExtremZ-14  
+216.65	radiusAtExtremZ-15  
+220.35	radiusAtExtremZ-16  
+220.95	radiusAtExtremZ-17  
+221.55	radiusAtExtremZ-18  
+222.15	radiusAtExtremZ-19  
+225.85	radiusAtExtremZ-20  
+226.45  radiusAtExtremZ-21  
+227.05  radiusAtExtremZ-22  
+227.65  radiusAtExtremZ-23  
+228.25  radiusAtExtremZ-24  
+228.85  radiusAtExtremZ-25  
+229.45  radiusAtExtremZ-26  
+230.05  radiusAtExtremZ-27  
+230.65  radiusAtExtremZ-28  
+231.25  radiusAtExtremZ-29  
+231.85  radiusAtExtremZ-30  
+232.45  radiusAtExtremZ-31  
+236.15  radiusAtExtremZ-32  
+236.75  radiusAtExtremZ-33  
+237.35  radiusAtExtremZ-34  
+237.95  radiusAtExtremZ-35  
+241.65  radiusAtExtremZ-36  
+242.25  radiusAtExtremZ-37  
+242.85  radiusAtExtremZ-38  
+243.45  radiusAtExtremZ-39  
+247.40  radiusAtExtremZ-40
+
+	
+	
+	
+	
+	
+	
+	
+	
+ 
+	
+
+
+
+
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+       

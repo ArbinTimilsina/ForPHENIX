@@ -1,0 +1,106 @@
+#ifndef __JETHADCORRECTION_H__
+#define __JETHADCORRECTION_H__
+
+//Data classes I am using in analysis
+#include <SubsysReco.h>
+#include <TPythia6.h>
+#include <TMath.h>
+
+class PHCompositeNode;
+class PHPythiaContainer;
+class TH1F;
+class TFile;
+class TTree;
+
+const int NPTBINS = 11;
+const float PTBINS[NPTBINS + 1] =
+    {
+	6.5913, 7.9245, 9.5273, 11.4544, 13.7712, 16.5566, 19.9054, 23.9316, 28.7721, 34.5916, 41.5883, 50.0001
+    };
+
+namespace fastjet
+{
+    class JetDefinition;
+}
+
+typedef struct
+{
+    int arm;
+    int charge;
+    float energy;
+    float mom;
+    float pT;
+    float eT;
+    float px;
+    float py;
+    float pz;
+    float eta;
+    float phi;
+} particles;
+
+class JetHadCorrection: public SubsysReco
+{
+ public:
+    JetHadCorrection();
+    virtual ~JetHadCorrection() {}
+
+    //  For this analysis we only use following:
+    int Init         (PHCompositeNode *topNode);
+    int InitRun      (PHCompositeNode *topNode);
+    int ResetEvent   (PHCompositeNode *topNode);
+    int process_event(PHCompositeNode *topNode);
+    int End          (PHCompositeNode *topNode);
+
+    void GetAntiKtJets(std::vector<particles> particle_list, float R, TH1F *hJet);
+
+
+ protected:
+    const std::string outfname;
+
+    TFile* outfile;
+    PHPythiaContainer *phpythia;
+
+    unsigned int nRunEvents;
+    bool writeTree;
+
+    TH1F *hEvents;
+    TH1F *hPtParton;
+    TH1F *hPtParticle;
+
+    TTree *pythiaParton;
+    std::vector<particles> pythia_parton_list;
+
+    TTree *pythiaParticle;
+    std::vector<particles> pythia_particle_list;
+
+    inline float phiReduce(float phi)
+    {
+        if (phi < -TMath::PiOver2())
+            {
+                phi += TMath::TwoPi();
+            }
+        if (phi >= 3.0 * TMath::PiOver2())
+            {
+                phi -= TMath::TwoPi();
+            }
+        return phi;
+    }
+};
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

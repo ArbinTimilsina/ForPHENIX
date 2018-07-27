@@ -1,0 +1,205 @@
+# -*- mode: python; -*-
+
+import os, sys, glob
+
+#####################################################################
+
+# $HOME, $PATH, and $LD_LIBRARY_PATH are needed on the RCF in order to
+# get Intel C++ and Fortran compilers, and rootcint to work.
+
+# FIXME: Configurations need to be placed in a module
+# FIXME: Module to define F77_FUNC and Fortran compiler linkage needed
+
+# Note: The Intel Fortran Compiler has the following linkage on Red
+# Hat Enterprise Linux 4 WS Update 4:
+#
+# -L/opt/intel/fc/9.1.041/lib -L/usr/lib/gcc/i386-redhat-linux/3.4.6/
+# -L/usr/lib/gcc/i386-redhat-linux/3.4.6/../../../ -lsvml -lifport
+# -lifcore -limf -lm -lipgo -lirc -lgcc_s -lirc_s -ldl
+
+env = Environment()
+
+for key in ['HOME', 'PATH', 'LD_LIBRARY_PATH', 'ROOTSYS',
+            'OFFLINE_MAIN']:
+    if key in os.environ.keys():
+        env.Append(ENV = {key : os.environ[key]})
+
+conf = Configure(env)
+
+# # C++ Compiler
+# conf.env.Replace(CXX = 'ccache icpc')
+# conf.env.Append(CXXFLAGS = ['-g', '-O0'])
+# conf.env.Append(CXXFLAGS = ['-wd161,191'])
+# conf.env.Replace(SHCXX = 'ccache icpc')
+# conf.env.Append(SHCXXFLAGS = ['-g', '-O0'])
+# conf.env.Append(SHCXXFLAGS = ['-wd161,191'])
+
+# # Fortran Compiler
+# conf.env.Replace(FORTRAN = 'ifort')
+# conf.env.Append(FORTRANFLAGS = ['-g', '-O0'])
+# conf.env.Replace(SHFORTRAN = 'ifort')
+# conf.env.Append(SHFORTRANFLAGS = ['-g', '-O0'])
+
+# ifort_libpath = [
+#     '/opt/intel/fc/9.1.041/lib',
+#     os.path.join(env['ENV']['HOME'],
+#                  'software/intel/fc/9.1.041/lib')]
+
+conf.env.Replace(CXX = 'ccache g++')
+
+conf.env.Append(CXXFLAGS = ['-g', '-O0'])
+conf.env.Append(CXXFLAGS = ['-Wall', '-Wno-unknown-pragmas',
+                            '-Werror'])
+
+conf.env.Append(CPPDEFINES = ['HAVE_SSE'])
+conf.env.Append(CPPDEFINES = ['HAVE_PPMD_J'])
+
+conf.env.Append(CPPDEFINES = ['_LARGEFILE64_SOURCE'])
+
+# # ILM Base
+# lzo_search_path = [
+#     os.path.join(env['ENV']['HOME'], 'software', 'openexr')]
+# for path in [''] + lzo_search_path:
+#     header = os.path.join('OpenEXR', 'half.h')
+#     if path != '':
+#         header = os.path.join(path, 'include', header)
+#     if conf.CheckCXXHeader(header):
+#         conf.env.Append(CPPDEFINES = ['HAVE_ILMBASE'])
+#         conf.env.Append(LIBS = ['Half'])
+#         if path != '':
+#             conf.env.Append(CPPPATH = [
+#                 os.path.join(path, 'include')])
+#             conf.env.Append(LIBPATH = [
+#                 os.path.join(path, 'lib')])
+#         break
+# # GNU NANA
+# nana_search_path = [
+#     os.path.join(env['ENV']['HOME'], 'software', 'nana')]
+# for path in [''] + nana_search_path:
+#     header = 'nana-config.h'
+#     if path != '':
+#         header = os.path.join(path, 'include', header)
+#     if conf.CheckCHeader(header):
+#         conf.env.Append(CPPDEFINES = ['HAVE_NANA'])
+#         conf.env.Append(LIBS = ['nana'])
+#         if path != '':
+#             conf.env.Append(CPPPATH = [
+#                 os.path.join(path, 'include')])
+#             conf.env.Append(LIBPATH = [
+#                 os.path.join(path, 'lib')])
+#         break
+# # Intel MKL/Cluster MKL 9.0
+# mkl_search_path = [
+#     os.path.join('/opt', 'intel', 'cmkl', '9.0'),
+#     os.path.join(env['ENV']['HOME'], 'software',
+#                  'intel', 'cmkl', '9.0'),
+#     os.path.join('/opt', 'intel', 'mkl', '9.0'),
+#     os.path.join(env['ENV']['HOME'], 'software',
+#                  'intel', 'mkl', '9.0')]
+# for path in [''] + mkl_search_path:
+#     header = 'mkl_types.h'
+#     if path != '':
+#         header = os.path.join(path, 'include', header)
+#     if conf.CheckCHeader(header):
+#         conf.env.Append(CPPDEFINES = ['HAVE_MKL'])
+#         conf.env.Append(LIBS = ['mkl_solver', 'mkl_lapack'])
+#         if os.uname()[4] == 'x86_64':
+#             conf.env.Append(LIBS = ['mkl_em64t'])
+#         elif os.uname()[4] == 'i686':
+#             conf.env.Append(LIBS = ['mkl_ia32'])
+#         conf.env.Append(LIBS = ['guide', 'pthread'])
+#         if path != '':
+#             conf.env.Append(CPPPATH = [
+#                 os.path.join(path, 'include')])
+#             if os.uname()[4] == 'x86_64':
+#                 conf.env.Append(LIBPATH = [
+#                     os.path.join(path, 'lib', 'em64t')])
+#             elif os.uname()[4] == 'i686':
+#                 conf.env.Append(LIBPATH = [
+#                     os.path.join(path, 'lib', '32')])
+#         break
+
+# OpenSSL
+if conf.CheckCHeader([os.path.join('sys', 'types.h'),
+                      os.path.join('openssl', 'sha.h')]):
+    conf.env.Append(CPPDEFINES = ['HAVE_OPENSSL'])
+# CERN ROOT
+root_search_path = [os.path.join(env['ENV']['ROOTSYS'])]
+root_cpppath = []
+root_libpath = []
+root_linkflags = []
+root_libs = []
+for path in [''] + root_search_path:
+    if conf.CheckCXXHeader(os.path.join(path, 'include', 'TROOT.h')):
+        conf.env.Append(CPPDEFINES = ['HAVE_ROOT'])
+        conf.env.Append(CPPFLAGS = ['-pthread'])
+        root_cpppath = [os.path.join(path, 'include')]
+        root_libpath = [os.path.join(path, 'lib')]
+        root_linkflags = ['-Wl,-rpath,%s' %
+                          os.path.join(path, 'lib')]
+        root_libs = ['Core', 'Cint', 'Hist', 'Graf', 'Graf3d',
+                     'Gpad', 'Tree', 'Rint', 'Postscript',
+                     'Matrix', 'Physics']
+        conf.env.Replace(ROOTCINTCOM = 'rootcint')
+        break
+# PHENIX offline
+phenix_offline_cpppath = []
+phenix_offline_libpath = []
+phenix_offline_linkflags = []
+phenix_offline_libs = []
+if 'OFFLINE_MAIN' in env['ENV'].keys():
+    phenix_offline_search_path = [
+        os.path.join(env['ENV']['OFFLINE_MAIN'])]
+    for path in [''] + phenix_offline_search_path:
+        if conf.CheckCXXHeader(os.path.join(path, 'include',
+                                            'Fun4AllServer.h')):
+            conf.env.Append(CPPDEFINES = ['HAVE_PHENIX_OFFLINE'])
+            phenix_offline_cpppath = [
+                os.path.join(path, 'include'), '#/phenix/phenix']
+            phenix_offline_libpath = [os.path.join(path, 'lib')]
+            phenix_offline_linkflags = [
+                '-Wl,-rpath,%s' % os.path.join(path, 'lib')]
+            phenix_offline_libs = [
+                'fun4all', 'recal', 'CNT', 'CrkPID', 'ert', 'spin',
+                'tec', 'lvl2']
+            break
+
+env = conf.Finish()
+
+log_file = os.path.join(env.GetLaunchDir(), 'script', '*.log')
+condor_file = os.path.join(env.GetLaunchDir(), 'script',
+                           'condor', '*')
+env.Clean('.', glob.glob(log_file))
+env.Clean('.', glob.glob(condor_file))
+
+Export('env')
+# Export('ifort_libpath')
+Export('root_cpppath')
+Export('root_libpath')
+Export('root_linkflags')
+Export('root_libs')
+Export('phenix_offline_cpppath')
+Export('phenix_offline_libpath')
+Export('phenix_offline_linkflags')
+Export('phenix_offline_libs')
+
+SConscript([os.path.join('libjetevent', 'SConscript'),
+            os.path.join('libppmd', 'SConscript'),
+            os.path.join('libextract', 'SConscript')])
+
+# Stuff left from autoconf (pity, needed for PHENIX)
+
+env.Clean('.', glob.glob('*~'))
+env.Clean('.', ['aclocal.m4', 'autom4te.cache', 'confdefs.h',
+		'config.cache', 'config.guess', 'config.h',
+		'config.h.in', 'config.log', 'config.sub',
+		'config.status', 'configure', 'depcomp', 'install-sh',
+		'libtool', 'ltconfig', 'ltmain.sh', 'Makefile',
+		'Makefile.in', 'missing', 'mkinstalldirs'])
+env.Clean('.', glob.glob('stamp-h*'))
+env.Clean('.', glob.glob('*/*~'))
+env.Clean('.', glob.glob('*/Makefile'))
+env.Clean('.', glob.glob('*/Makefile.in'))
+env.Clean('.', glob.glob('*/.deps'))
+env.Clean('.', glob.glob('*/.libs'))
+env.Clean('.', glob.glob('se-*.root'))

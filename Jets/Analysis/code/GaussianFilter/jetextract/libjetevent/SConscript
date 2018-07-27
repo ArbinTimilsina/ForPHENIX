@@ -1,0 +1,50 @@
+# -*- mode: python; -*-
+
+import os
+
+Import('env')
+
+libjetevent_env = env.Clone()
+
+libjetevent_env.Prepend(CPPPATH = [
+    os.path.join('#build', 'src', 'libppmd'),
+    os.path.join('#build', 'src', 'libhalf'),
+    os.path.join('#build', 'src', 'libextract'),
+    os.path.join('#build', 'src', 'libjetbase'),
+    os.path.join('#build', 'src', 'libjetevent')])
+
+filelist = ['event.cc', 'lorentz.cc', 'particle.cc', 'snowmass.cc',
+            'xefio.cc']
+
+if libjetevent_env.has_key('ROOTCINTCOM'):
+    libjetevent_env.Append(CPPPATH = [os.path.join('#')])
+    libjetevent_env.Rootcint(
+        ['event_dict.cc', 'event_dict.h'],
+        [os.path.join('jetevent', 'event.h'),
+         'event_linkdef.h'])
+    libjetevent_env.Rootcint(
+        ['lorentz_dict.cc', 'lorentz_dict.h'],
+        [os.path.join('jetevent', 'lorentz.h'),
+         'lorentz_linkdef.h'])
+    libjetevent_env.Rootcint(
+        ['particle_dict.cc', 'particle_dict.h'],
+        [os.path.join('jetevent', 'particle.h'),
+         'particle_linkdef.h'])
+    libjetevent_env.Rootcint(
+        ['snowmass_dict.cc', 'snowmass_dict.h'],
+        [os.path.join('jetevent', 'snowmass.h'),
+         'snowmass_linkdef.h'])
+    libjetevent_env.Rootcint(
+        ['xefio_dict.cc', 'xefio_dict.h'],
+        [os.path.join('jetevent', 'xefio.h'),
+         'xefio_linkdef.h'])
+    filelist += ['event_dict.cc', 'lorentz_dict.cc',
+                 'particle_dict.cc', 'snowmass_dict.cc',
+                 'xefio_dict.cc']
+
+if '-ipo' in env['CXXFLAGS']:
+    env['LIBRARY_SOURCE'] += map(
+        lambda f: os.path.join('#build', 'src', 'libjetevent', f),
+        filelist)
+else:
+    libjetevent_env.StaticLibrary('jetevent', filelist)

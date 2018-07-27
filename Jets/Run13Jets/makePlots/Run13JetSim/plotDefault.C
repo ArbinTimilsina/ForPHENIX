@@ -1,0 +1,328 @@
+#include "/direct/phenix+u/arbint/treasures/histoMakeup.C"
+
+const int NPTBINS_TRUE = 22;
+const float PTBINS_TRUE[NPTBINS_TRUE + 1] =
+    {
+	5.0000,
+	6.0113,
+	7.2272,
+	8.6890,
+	10.4465,
+	12.5594,
+	15.0998,
+	18.1539,
+	21.8258,
+	26.2404,
+	31.5479,
+	37.9289,
+	45.6005,
+	54.8239,
+	65.9128,
+	79.2447,
+	95.2730,
+	114.5434,
+	137.7114,
+	165.5656,
+	199.0536,
+	239.3150,
+	287.7200
+    };
+
+using namespace std;
+
+float minimumX = 5.0;
+float maximumX = 150.0;
+
+void plotDefault()
+{
+    gStyle->SetOptStat(0);
+    gStyle->SetErrorX(0);
+
+    const char *armsect[8] = {"Sector: 0 (PbSc)", "Sector: 1 (PbSc)", "Sector: 2 (PbSc)", "Sector: 3 (PbSc)",
+                              "Sector: 4 (PbGl)", "Sector: 5 (PbGl)", "Sector: 6 (PbSc)", "Sector: 7 (PbSc)"
+    };
+
+    TPaveText *algorithm = new TPaveText(0.728, 0.830, 0.897, 0.881, "brNDC");
+    algorithm->SetTextSize(0.035);
+    algorithm->SetBorderSize(1);
+    algorithm->SetTextFont(2);
+    algorithm->SetFillColor(10);
+    algorithm->SetTextColor(46);
+    algorithm->SetTextAlign(32);
+    algorithm->AddText("Anti-kt, R = 0.3");
+
+    TPaveText *algorithmMatrix = new TPaveText(0.69, 0.10, 0.90, 0.15, "brNDC");
+    algorithmMatrix->SetTextSize(0.035);
+    algorithmMatrix->SetBorderSize(1);
+    algorithmMatrix->SetTextFont(2);
+    algorithmMatrix->SetFillColor(10);
+    algorithmMatrix->SetTextColor(46);
+    algorithmMatrix->SetTextAlign(32);
+    algorithmMatrix->AddText("Anti-kt, R = 0.3");
+
+    TFile *file = new TFile("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/Run13Simulation/Run13JetSim/Run13JetSim.root", "r");
+    cout << "Running p+p" << endl;
+
+    TPaveText *speciesCommon = getSpecies(4);
+    speciesCommon->AddText("PISA+Reco: Run 13 p+p @ 510 GeV setup");
+
+    TPaveText *titleResponseMatrix = getHistoTitle(2);
+    titleResponseMatrix->AddText("Response Matrix: p+p");
+
+    TH1F *hEvents = (TH1F*)file->Get("hEvents");
+    float nEvents = hEvents->GetBinContent(1);
+    cout << "Total Events is: " << nEvents << endl;
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    TH1F *hPtTrueJets = (TH1F*)file->Get("hPtTrueJet");
+    hPtTrueJets->Sumw2();
+
+    TH1F *hPtTrueMatchedJets = (TH1F*)file->Get("hPtTrueMatchedJet");
+    hPtTrueMatchedJets->Sumw2();
+
+    TH1F *hEfficiency = new TH1F("hEfficiency", "", NPTBINS_TRUE, PTBINS_TRUE);
+    hEfficiency->Divide(hPtTrueMatchedJets, hPtTrueJets, 1, 1, "b(1,1) mode");
+    hEfficiency->Scale(2);
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Response Matrix
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    TH2F *hResponseMatrix = (TH2F*)file->Get("hResponseMatrix");
+    setHisto(hResponseMatrix, "p_{T, Reco} (GeV/c)", "p_{T, True} (GeV/c)");
+
+    TCanvas *cResponseMatrix = new TCanvas("cResponseMatrix", "", 800, 700);
+    cResponseMatrix->cd();
+    gPad->SetLogx();
+    gPad->SetLogy();
+    gPad->SetLogz();
+    hResponseMatrix->Draw("colz");
+    titleResponseMatrix->Draw("SAME");
+    speciesCommon->Draw("SAME");
+    algorithmMatrix->Draw("SAME");
+
+    cResponseMatrix->Update();
+    cResponseMatrix->SaveAs("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/ResponseMatrix.png");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //Reconstruction Efficiency
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    TPaveText *titleEfficiency = getHistoTitle();
+    titleEfficiency->AddText("Reconstruction Efficiency");
+
+    TLine *lineEfficiency = new TLine(minimumX, 1.0, maximumX, 1.0);
+    lineEfficiency->SetLineStyle(2);
+    lineEfficiency->SetLineColor(1);
+
+    setHisto(hEfficiency, "p_{T, True} (GeV/c)", "#epsilon/#epsilon_{geo}");
+    hEfficiency->GetXaxis()->SetRangeUser(minimumX, maximumX);
+    hEfficiency->SetMaximum(1.1);
+    hEfficiency->SetMinimum(0);
+
+    setMarker(hEfficiency, 33, 2, 2.0);
+
+    TCanvas *cEfficiency = new TCanvas("cEfficiency", "", 1100, 700);
+    cEfficiency->cd();
+    hEfficiency->Draw("P");
+    speciesCommon->Draw("SAME");
+    lineEfficiency->Draw("SAME");
+    algorithm->Draw("SAME");
+
+    cEfficiency->Update();
+    cEfficiency->SaveAs("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/ReconstructionEfficiency.png");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+    TH2F *hNE2 = (TH2F*)file->Get("hModifiedQuality_NE");
+    setHisto(hNE2, "board", "alpha");
+
+    double maxx = hNE2->GetBinContent(hNE2->GetMaximumBin());
+    double max = 0.5 * maxx;
+    hNE2->SetMaximum(max);
+
+    TH2F *hSE2 = (TH2F*)file->Get("hModifiedQuality_SE");
+    setHisto(hSE2, "board", "alpha");
+    hSE2->SetMaximum(max);
+
+    TH2F *hNW2 = (TH2F*)file->Get("hModifiedQuality_NW");
+    setHisto(hNW2, "board", "alpha");
+    hNW2->SetMaximum(max);
+
+    TH2F *hSW2 = (TH2F*)file->Get("hModifiedQuality_SW");
+    setHisto(hSW2, "board", "alpha");
+    hSW2->SetMaximum(max);
+
+    TCanvas *cQuality = new TCanvas("cQuality", "Modified Quality", 1200, 700);
+    cQuality->Clear();
+    cQuality->Divide(2, 2);
+    cQuality->cd(1);
+    hNE2->Draw("colz");
+    speciesCommon->Draw("SAME");
+    TPaveText *titleNE2 = getHistoTitle();
+    titleNE2->AddText("Tracks going into jet reconstruction, NE");
+    titleNE2->Draw("SAME");
+
+    cQuality->cd(2);
+    hNW2->Draw("colz");
+    TPaveText *titleNW2 = getHistoTitle();
+    titleNW2->AddText("NW");
+    titleNW2->Draw("SAME");
+
+    cQuality->cd(3);
+    hSE2->Draw("colz");
+    TPaveText *titleSE2 = getHistoTitle();
+    titleSE2->AddText("SE");
+    titleSE2->Draw("SAME");
+
+    cQuality->cd(4);
+    hSW2->Draw("colz");
+    TPaveText *titleSW2 = getHistoTitle();
+    titleSW2->AddText("SW");
+    titleSW2->Draw("SAME");
+
+    cQuality->SaveAs("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/QualityModified.png");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    TH1F *hTracksZed = (TH1F*)file->Get("hTracksZed");
+    hTracksZed->SetLineColor(2);
+    hTracksZed->SetLineWidth(2);
+    hTracksZed->Scale(1 / nEvents, "width");
+    setHisto(hTracksZed, "zed", "#frac{1}{N_{evts}} #frac{dN}{dzed}");
+
+    TH1F *hTracksPhi = (TH1F*)file->Get("hTracksPhi");
+    hTracksPhi->SetLineColor(2);
+    hTracksPhi->SetLineWidth(2);
+    hTracksPhi->Scale(1 / nEvents, "width");
+    setHisto(hTracksPhi, "#phi", "#frac{1}{N_{evts}} #frac{dN}{d#phi}");
+
+    TPaveText *titleTracks = getHistoTitle();
+    titleTracks->AddText("Tracks going into jet reconstruction");
+
+    TCanvas *cTracks = new TCanvas("cTracks", " ", 1200, 400);
+    cTracks->Divide(2, 1);
+
+    cTracks->cd(1);
+    hTracksZed->Draw();
+    titleTracks->Draw("SAME");
+
+    cTracks->cd(2);
+    hTracksPhi->Draw();
+    cTracks->Update();
+    cTracks->SaveAs("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/TracksZedPhi.png");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    TH1F *hClustersEta = (TH1F*)file->Get("hClustersEta");
+    hClustersEta->SetLineColor(2);
+    hClustersEta->SetLineWidth(2);
+    hClustersEta->Scale(1 / nEvents, "width");
+    setHisto(hClustersEta, "#eta", "#frac{1}{N_{evts}} #frac{dN}{d#eta}");
+
+    TH1F *hClustersPhi = (TH1F*)file->Get("hClustersPhi");
+    hClustersPhi->SetLineColor(2);
+    hClustersPhi->SetLineWidth(2);
+    hClustersPhi->Scale(1 / nEvents, "width");
+    setHisto(hClustersPhi, "#phi", "#frac{1}{N_{evts}} #frac{dN}{d#phi}");
+
+    TPaveText *titleClusters = getHistoTitle();
+    titleClusters->AddText("Clusters going into jet reconstruction");
+
+    TCanvas *cClusters = new TCanvas("cClusters", " ", 1200, 400);
+    cClusters->Divide(2, 1);
+
+    cClusters->cd(1);
+    hClustersEta->Draw();
+    titleClusters->Draw("SAME");
+
+    cClusters->cd(2);
+    hClustersPhi->Draw();
+    cClusters->Update();
+    cClusters->SaveAs("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/ClustersEtaPhi.png");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    TH1F *hEMCalTOF = (TH1F*)file->Get("hEMCalTOF");
+    hEMCalTOF->SetLineColor(2);
+    hEMCalTOF->SetLineWidth(2);
+    setHisto(hClustersEta, "EMCal TOF", "Counts");
+    hEMCalTOF->GetXaxis()->SetRangeUser(-40.0, 40.0);
+
+    TCanvas *cTOF = new TCanvas("cTOF", " ", 1200, 700);
+    cTOF->cd();
+    hEMCalTOF->Draw();
+    cTOF->SaveAs("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/EMCalTOF.png");
+
+    /////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    TCanvas* cHitsSim[2];
+    for (int iarm = 0; iarm < 2; iarm++)
+        {
+            cHitsSim[iarm] = new TCanvas(Form("cHitsSim_arm%d", iarm), "", 360, 720);
+            cHitsSim[iarm]->Divide(1, 4);
+
+            TH2F *hHit[8];
+            for (int isector = 0; isector < 4; isector++)
+                {
+                    int ias = iarm * 4 + isector;
+
+                    hHit[ias] = (TH2F*)file->Get(Form("hSecorHits_%i", ias));
+
+                    hHit[ias]->GetXaxis()->SetTitle("Z Position");
+                    hHit[ias]->GetXaxis()->SetTitleSize(0.04);
+                    hHit[ias]->GetXaxis()->SetTitleOffset(1.2);
+                    hHit[ias]->GetXaxis()->SetTitleFont(42);
+
+                    hHit[ias]->GetYaxis()->SetTitle("Y Position");
+                    hHit[ias]->GetYaxis()->SetTitleSize(0.04);
+                    hHit[ias]->GetYaxis()->SetTitleOffset(0.5);
+                    hHit[ias]->GetYaxis()->SetTitleFont(42);
+
+                    hHit[ias]->SetTitle("");
+
+                    TPaveText *title = getHistoTitle();
+                    title->AddText(Form("%s", armsect[ias]));
+
+                    cHitsSim[iarm]->cd(4 - isector);
+
+                    hHit[ias]->Draw("colz");
+                    title->Draw("Same");
+                    if(ias == 3 || ias == 7)
+                        {
+                            speciesCommon->Draw("Same");
+                        }
+
+                    cHitsSim[iarm]->Update();
+                }
+            cHitsSim[iarm]->SaveAs(Form("/gpfs/mnt/gpfs02/phenix/spin/spin1/phnxsp01/arbint/plots/Run13JetSim/SectorHits_Arm%d.png", iarm));
+        }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

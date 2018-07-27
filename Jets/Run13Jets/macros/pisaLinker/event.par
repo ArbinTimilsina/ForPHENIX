@@ -1,0 +1,33 @@
+c*************************************************************************
+c	event.par (for kinematic and particle ID cuts)  F77 version
+c                 (used by HIJET and  VENUS event interfaces)
+c   Original Author: C.F. Maguire (1992)
+c   Revision History
+c
+c*************************************************************************
+ $epar
+  y_min = -1.e+20,
+  y_max = +1.e+20,
+  p_min = 0.00,
+  p_max = +1.e+20,
+  pt_min = 0.00,
+  pt_max = +1.e+20,
+  the_min = 0.00,
+  the_max = 180.00,
+  phi_min = -180.00,
+  phi_max = +180.00,
+  xyz0_input = 0.0, 0.0, 0.0,
+  vrms = 0.0, 0.0, 0.0,
+  north_south = 0,
+  nskip_evt = 0,
+  t0cent = 0.0,
+  t0width = 0.0,
+ $end
+**************************************************************************
+*
+* Lines below show how one "includes" only the pions using GEANT IDs
+*
+  iincl = +3,
+  include = 8, 9, 7, 17*0, 
+*
+**************************************************************************

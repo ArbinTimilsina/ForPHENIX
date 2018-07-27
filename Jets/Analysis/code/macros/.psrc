@@ -1,0 +1,213 @@
+# at least one error to create summary
+insure++.summarize_on_error 1
+# not leaks in summary
+insure++.LeakSummaryFilter -! *
+#insure++.report_overwrite false
+#show all errors which occur in the same line of code
+insure++.report_limit 1
+# return line numbers, use insures internal stack tracing
+insure++.stack_internal on
+# no leak check right now
+insure++.leak_search off
+#insure++.leak_combine none
+insure++.leak_sort size
+insure++.leak_sweep off
+insure++.leak_trace off
+#insure++.checking_uninit_min_size 1
+# change the pattern which is used to detect uninitialized memory to check
+# for false positives (mainly for shorts where the valid value is sometimes
+# 0adde)
+#insure++.checking_uninit_pattern abbabead
+#
+# Specifies the directory where Insure++ will store its cache files 
+# containing symbolic debugging information
+insure++.GusCacheDir $PWD
+#
+# put the tca.log file where nobody can see it, add the process id, so
+# people do not write into files opened by another process
+# overwrite logfile
+insure++.coverage_log_file /phenix/scratch/insure/tca.log.%n
+insure++.coverage_overwrite on
+# error output suppression
+insure++.unsuppress all
+
+# compilation false positives
+# the cmath creates this PARSE_ERROR but using PARSE_ERROR as
+# suppression keyword does not work in insure Version 7.1.7
+# these cmaths are under SL5.3:
+insure++.suppress * at cmath:522
+insure++.suppress * at cmath:531
+insure++.suppress * at cmath:540
+# these are in SL6.4:
+insure++.suppress * at cmath:500
+insure++.suppress * at cmath:510
+insure++.suppress * at cmath:519
+insure++.suppress * at cmath:528
+insure++.suppress * at string.h:321
+insure++.suppress * at string.h:242
+insure++.suppress * in cpp_type_traits.h
+insure++.suppress * in exception_ptr.h
+insure++.suppress * in move.h
+insure++.suppress * in stringfwd.h
+#---Not checked if needed under SL6 yet------------
+insure++.suppress * in mmintrin.h
+insure++.suppress * in xmmintrin.h
+insure++.suppress * in boost_sp_shared_count.h
+insure++.suppress * in boost_shared_ptr.h
+insure++.suppress * in hashtable_policy.h
+insure++.suppress * in hashtable
+insure++.suppress * in new_allocator.h
+insure++.suppress * in stl_bvector.h
+insure++.suppress * in stl_iterator.h
+insure++.suppress * in stl_map.h
+insure++.suppress * in stl_move.h
+insure++.suppress * in stl_multimap.h
+insure++.suppress * in stl_pair.h
+insure++.suppress * in stl_tree.h
+insure++.suppress * in stl_vector.h
+insure++.suppress * in tuple
+insure++.suppress * in type_traits
+insure++.suppress * in unordered_map
+insure++.suppress * in vector.tcc
+#
+#
+# Runtime errors
+#
+# return failures by common checks
+insure++.suppress RETURN_FAILURE { access() * }
+insure++.suppress RETURN_FAILURE { fgets() * }
+insure++.suppress RETURN_FAILURE { fopen() * }
+insure++.suppress RETURN_FAILURE { fopen64() * }
+insure++.suppress RETURN_FAILURE { fread() * }
+insure++.suppress RETURN_FAILURE { getenv() * }
+insure++.suppress RETURN_FAILURE { inet_addr() * }
+insure++.suppress RETURN_FAILURE { ioctl() * }
+insure++.suppress RETURN_FAILURE { lseek64() * }
+insure++.suppress RETURN_FAILURE { open() * }
+insure++.suppress RETURN_FAILURE { opendir() * }
+insure++.suppress RETURN_FAILURE { pclose() * }
+insure++.suppress RETURN_FAILURE { read() * }
+insure++.suppress RETURN_FAILURE { readdir() * }
+insure++.suppress RETURN_FAILURE { semget() * }
+insure++.suppress RETURN_FAILURE { shmget() * }
+insure++.suppress RETURN_FAILURE { unlink() * }
+insure++.suppress RETURN_FAILURE { utime() * }
+insure++.suppress RETURN_FAILURE { __xstat() * }
+
+#from dynamic library handling
+insure++.suppress FREE_NULL {realloc() * }
+
+# X11, root - freeing a null pointer is actually allowed results in no-op
+insure++.suppress FREE_NULL { free() * }
+
+# odbc
+insure++.suppress * { free() iniPropertyDelete() * }
+insure++.suppress * { free() iniObjectDelete() * }
+
+#GEANT Common blocks
+insure++.suppress BAD_DECL at gcflag.hh:23
+insure++.suppress BAD_DECL at quest.hh:11
+insure++.suppress BAD_DECL at nuclev.inc:111
+
+# weird shit... 
+# insure seems to have issues with fortran common blocks, it
+# picks some unrelated c++ include and moans about mismatches
+# labeled as Incompatible global declarations:
+#
+#  Array and non-array declarations are not equivalent.
+# Actual declaration     : non-array (4 bytes), declared at nuclev.inc, 136
+# Conflicting declaration: array of 15 elements, declared at emcTowerContent.h, 240
+insure++.suppress BAD_DECL at emcTowerContent.h:240
+#  Arrays have different type and dimension.
+#  Actual declaration     : array of 251 elements, declared at eva0.inc, 22
+#  Conflicting declaration: array of 14 elements, declared at PHMuoTracksOut.h, 455
+insure++.suppress BAD_DECL at PHMuoTracksOut.h:455
+# more weird shit from the muon code
+insure++.suppress READ_OVERFLOW { strlen() G__getexpr() * }
+insure++.suppress READ_OVERFLOW { strlen() G__FastAllocString::G__FastAllocString() G__search_typename() * }
+insure++.suppress READ_OVERFLOW { memcpy() G__FastAllocString::G__FastAllocString() G__search_typename() * }
+# and here is a TString
+insure++.suppress BAD_DECL at TString.h:525
+# PHGeant
+insure++.suppress WRITE_OVERFLOW { memmove() * PHGeant::ReadFile* * }
+insure++.suppress READ_OVERFLOW { memmove() * PHGeant::ReadFile* * }
+# stl strings
+insure++.suppress FREE_GLOBAL { free() * }
+
+# geant init
+insure++.suppress WRITE_OVERFLOW { memmove() gphxin_() * }
+insure++.suppress READ_OVERFLOW { memmove() gphxin_() * }
+
+# while loop, aborting when null pointer is returned
+insure++.suppress COPY_WILD { A_Event::createMap() * }
+insure++.suppress COPY_WILD { A_Event::existPacket* * }
+insure++.suppress COPY_WILD { A_Event::getPacket* * }
+insure++.suppress COPY_WILD { A_Event::getPacketList* * }
+
+# stl bit vectors set an uninit var to zero by *_M_p &= ~_M_mask
+# and do not bother to initialize all bits which confuses insure 
+# which does not realize that the uninitialised bits do not 
+# affect the result
+insure++.suppress READ_UNINIT_MEM(read) at stl_bvector.h:81
+insure++.suppress READ_UNINIT_MEM(read) at stl_bvector.h:87
+insure++.suppress READ_UNINIT_MEM(read) at stl_bvector.h:89
+insure++.suppress COPY_WILD at stl_bvector.h:125
+
+#emc null pointer check
+insure++.suppress COPY_WILD at emcCalibrationDataHelper.C:347
+insure++.suppress COPY_WILD at emcCalibrationDataHelper.C:396
+
+# this suppresses the Root Dictionary stuff 
+insure++.suppress COPY_WILD { G__cpp_setup_* * }
+insure++.suppress COPY_WILD { G__setup_memvar* * }
+insure++.suppress EXPR_WILD { G__setup_memvar* * }
+insure++.suppress READ_OVERFLOW { * G__add_setup_func* * }
+insure++.suppress READ_OVERFLOW { * G__savestring* * }
+insure++.suppress READ_OVERFLOW { * G__memfunc_setup_imp* * }
+insure++.suppress READ_OVERFLOW { * G__defined_tagname* * }
+insure++.suppress READ_OVERFLOW { * G__search_tagname* * }
+insure++.suppress READ_WILD { G__RegisterLibrary* * }
+insure++.suppress READ_WILD { * G__RegisterLibrary* * }
+
+
+# false positives, those locations have 0xadde as valid data
+# which triggers this uninit mem from insure (insure writes 0xdeadbeaf
+# for 32 bits, 0xdead for 16 bits) with other endianess it comes out 
+# to be 0xaddeafbe)
+insure++.suppress READ_UNINIT_MEM(read) { Packet_gl1p::iValue* * }
+insure++.suppress READ_UNINIT_MEM(read) { Packet_gl1::iValue* * }
+insure++.suppress READ_UNINIT_MEM(read) { DchHitLineOutv2::float2short* * }
+insure++.suppress READ_UNINIT_MEM(read) { DchHitLineOutv2::short2float* * }
+insure++.suppress READ_UNINIT_MEM(copy) { DchHitLineOutv2::short2float(short) * }
+insure++.suppress READ_UNINIT_MEM(read) { DchHitLineOutv2::getZ() * }
+insure++.suppress READ_UNINIT_MEM(copy) { DchHitLineOutv2::getZ() * }
+insure++.suppress READ_UNINIT_MEM(read) { DchHitLineOutv2::getXYZ() * }
+insure++.suppress READ_UNINIT_MEM(copy) { MutrgHeader_v1::SetParityWord(unsigned short) * }
+insure++.suppress * { lzo1x_decompress_safe() * }
+insure++.suppress * { do_compress() * }
+
+#false positives from half precision storage as shorts
+insure++.suppress READ_UNINIT_MEM(copy) { half_to_float* * }
+insure++.suppress READ_UNINIT_MEM(copy) { useInt::GetFloat* * }
+insure++.suppress READ_UNINIT_MEM(copy) { half::setBits* * }
+insure++.suppress READ_UNINIT_MEM(read) at half.h:504
+insure++.suppress READ_UNINIT_MEM(read) { SvxHitMapEntry::get_z* * }
+insure++.suppress READ_UNINIT_MEM(copy) { RecoverDchHits::process_event* * }
+insure++.suppress READ_UNINIT_MEM(copy) { RecoverSvxHits::process_event* * }
+insure++.suppress READ_UNINIT_MEM(copy) { RecoverTrackProjections::process_event* * }
+
+# false positives from shorts being a valid 0xadde
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v1.h:75
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v1.h:79
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v1.h:83
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v1.h:87
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v1.h:91
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v1.h:95
+insure++.suppress READ_UNINIT_MEM(read) at TFvtxCompactTrk_v2.cxx:214
+insure++.suppress READ_UNINIT_MEM(copy) at TFvtxCompactTrk_v2.cxx:216
+insure++.suppress READ_UNINIT_MEM(copy) at TFvtxCompactTrk_v2.cxx:222
+insure++.suppress READ_UNINIT_MEM(copy) at TFvtxCompactTrk_v2.cxx:223
+insure++.suppress READ_UNINIT_MEM(copy) at TFvtxCompactTrk_v2.cxx:224
+
+# comment next line to get the graphical interface (insra):
+insure++.report_file insure.report

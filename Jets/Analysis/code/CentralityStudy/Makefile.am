@@ -1,0 +1,28 @@
+AUTOMAKE_OPTIONS = foreign
+
+INCLUDES = -I. -I$(srcdir) -I$(includedir) -I$(OFFLINE_MAIN)/include -I$(ROOTSYS)/include
+
+lib_LTLIBRARIES = \
+  libCentralityStudy.la 
+
+noinst_HEADERS = \
+  CentralityStudyLinkDef.h 
+
+include_HEADERS = \
+  CentralityStudy.h 
+
+libCentralityStudy_la_SOURCES = \
+  CentralityStudy.C \
+  CentralityStudy_Dict.C
+
+libCentralityStudy_la_LIBADD = $(OFFLINE_MAIN)/lib -lphool -lPHPythia -L$(ROOTSYS)/lib -lPhysics -lHist -lTree
+
+# Rule for generating CINT dictionaries from class headers.
+CentralityStudy_Dict.C: \
+  CentralityStudy.h \
+  CentralityStudyLinkDef.h
+	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
+
+clean-local:
+	rm -f *Dict*
+

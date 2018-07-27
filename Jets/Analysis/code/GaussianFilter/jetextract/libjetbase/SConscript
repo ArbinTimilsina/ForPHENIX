@@ -1,0 +1,31 @@
+# -*- mode: python; -*-
+
+import os
+
+Import('env')
+
+libjetbase_env = env.Clone()
+
+libjetbase_env.Prepend(CPPPATH = [
+    os.path.join('#build', 'src', 'libjetbase')])
+
+filelist = ['mem.cc', 'num.cc', 'specfunc.cc']
+
+if libjetbase_env.has_key('ROOTCINTCOM'):
+    libjetbase_env.Append(CPPPATH = [os.path.join('#')])
+    libjetbase_env.Rootcint(
+        ['num_dict.cc', 'num_dict.h'],
+        [os.path.join('jetbase', 'num.h'),
+         'num_linkdef.h'])
+    libjetbase_env.Rootcint(
+        ['geometry_dict.cc', 'geometry_dict.h'],
+        [os.path.join('jetbase', 'geometry.h'),
+         'geometry_linkdef.h'])
+    filelist += ['num_dict.cc', 'geometry_dict.cc']
+
+if '-ipo' in env['CXXFLAGS']:
+    env['LIBRARY_SOURCE'] += map(
+        lambda f: os.path.join('#build', 'src', 'libjetbase', f),
+        filelist)
+else:
+    libjetbase_env.StaticLibrary('jetbase', filelist)

@@ -1,0 +1,1896 @@
+//General PHENIX tools
+#include <getClass.h>
+#include <PHCompositeNode.h>
+#include <phool.h>
+#include <RunHeader.h>
+
+//Fun4All tools
+#include <Fun4AllServer.h>
+#include <Fun4AllHistoManager.h>
+#include <Fun4AllReturnCodes.h>
+
+//FastJet tools
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/ClusterSequence.hh>
+
+//My source file
+#include "Run13Jet.h"
+
+//Data classes I am using in analysis
+#include <PHCentralTrack.h>
+#include <PHGlobal.h>
+#include <EventHeader.h>
+#include <PreviousEvent.h>
+#include <emcClusterContainer.h>
+#include <emcClusterContent.h>
+
+//spin stuff
+#include <SpinDBOutput.hh>
+#include <SpinDBContent.hh>
+
+//for DC track quality
+#include <TrackQualityPP.h>
+
+//Cpp tools
+#include <iomanip>
+
+//Root tools
+#include <TFile.h>
+#include <TTree.h>
+#include <TNtuple.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TCut.h>
+#include <TVector3.h>
+#include <TLorentzVector.h>
+
+//For Trigger
+#include <TrigLvl1.h>
+#include <ErtOut.h>
+#include <TriggerHelper.h>
+
+//Used for EMCal warnmap
+#include "EmcMap.h"
+
+//for getting sigmalized variables
+#include "EmcMatching.h"
+#include "PC3Matching.h"
+
+//for correcting the EMC TOF
+#include "EmcTofCorr.h"
+
+//for the Mu correction
+#include "Run13MuCorr.h"
+
+//for bitmask
+#define X1_USED 1
+#define X2_USED 2
+#define UV_FOUND_UNIQUE 12
+
+//for ERT trigger (put into header file)
+//static const int ERT_BIT_MASK_A = 0x00000080;
+//static const int ERT_BIT_MASK_B = 0x00000040;
+//static const int ERT_BIT_MASK_C = 0x00000100;
+
+using namespace std;
+using namespace findNode;
+using namespace fastjet;
+
+SpinDBContent spin_cont;
+
+//================================ Constructor ================================
+//Here we can initiate some variables
+Run13Jet::Run13Jet(std::string outfilename)
+  : SubsysReco("Run13Jet"),
+    verbo(1),
+    outfname(outfilename),
+    writeTree(true)
+{
+  outfile = new TFile(outfname.c_str(), "RECREATE");
+
+  nTotalEvents = 0;
+  nGoodEvents = 0;
+  nGoodEvents_low = 0;
+  nGoodEvents_high = 0;
+  nJets = 0;
+  nPassFirst = 0;
+  nPassDcPcGhost = 0;
+  nPassDcPcConversion = 0;
+  nPassPairCut = 0;
+  nPassConversionEdge = 0;
+  nPassConversionElectron = 0;
+  nPassConversionEcore = 0;
+  nPassConversion = 0;
+  nChargedParticles = 0;
+  nNeutralParticles = 0;
+
+  InitTrees(writeTree);
+  InitHistograms();
+
+  phglobal = NULL;
+  evtheader = NULL;
+  ertOut = NULL;
+  lvl1trigger = NULL;
+  clus = NULL;
+  run_header = NULL;
+  triggerHelper = NULL;
+  zVertex = 0;
+  runNumber = 0;
+  eventNumber = 0;
+  isMB = NULL;
+  isData = NULL;
+  isLowRate = NULL;
+  ertTriggerFired = NULL;
+    
+  //ERT_BIT_MASK_A = 0x00000080;//in hearder file
+  //ERT_BIT_MASK_B = 0x00000040;
+  //ERT_BIT_MASK_C = 0x00000100;
+  
+  return;
+}
+
+int Run13Jet::Init(PHCompositeNode *topNode)
+{
+  if (verbo)
+    {
+      cout << ">>>>>>>>>>>>>>>>>>>  Init called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+    }
+
+  //Load and read the warnmap
+  EmcMap::ReadWarnMap("warnmap.txt");
+
+  //load EMC files
+  LoadAllEMCFiles();
+
+  //load PC3 files
+  LoadPointsPC3();
+
+  return EVENT_OK;
+
+}//end Init()
+
+const float Run13Jet::goodRunArray[780] = {386773, 386775, 386776, 386777, 386826, 386828, 386829, 386830, 386833,386838, 386839, 386841, 386843, 386844, 386881, 386882, 386883, 386884, 386941,386942, 386943, 386946, 386947, 386948, 386950, 386951, 386952, 386954, 387027,387070, 387072, 387077, 387078, 387128, 387138, 387139, 387227, 387290, 387414,387423, 387424, 387428, 387431, 387433, 387436, 387539, 387541, 387543, 387550,387551, 387560, 387566, 387571, 387649, 387651, 387659, 387660, 387661, 387666,387668, 387669, 387670, 387672, 387673, 387674, 387676, 387710, 387724, 387725,387784, 387785, 387787, 387788, 387790, 387793, 387801, 387802, 387803, 387806,387808, 387809, 387963, 387967, 388019, 388020, 388021, 388022, 388023, 388038,388039, 388042, 388047, 388050, 388051, 388052, 388261, 388263, 388404, 388405,388495, 388536, 388539, 388540, 388541, 388547, 388548, 388632, 388633, 388634,388638, 388640, 388692, 388693, 388694, 388696, 388697, 388698, 388699, 388700,388720, 388723, 388726, 388743, 388745, 388837, 388838, 388840, 388859, 388860,388862, 388863, 388864, 388865, 388866, 388978, 388980, 388981, 388984, 388985,388986, 389119, 389120, 389121, 389122, 389123, 389124, 389126, 389252, 389257,389320, 389322, 389323, 389324, 389326, 389327, 389334, 389335, 389336, 389338,389339, 389424, 389434, 389435, 389436, 389444, 389445, 389446, 389471, 389557,389558, 389559, 389560, 389570, 389571, 389573, 389575, 389576, 389577, 389578,389579, 389586, 389587, 389588, 389589, 389590, 389702, 389703, 389752, 389756,389758, 389759, 389760, 389761, 389762, 389765, 389766, 389767, 389768, 389904,389906, 389908, 389909, 390026, 390029, 390030, 390031, 390032, 390033, 390039,390174, 390175, 390176, 390230, 390231, 390232, 390234, 390237, 390239, 390306,390311, 390312, 390313, 390314, 390315, 390316, 390318, 390319, 390418, 390419,390421, 390422, 390423, 390424, 390425, 390507, 390510, 390511, 390512, 390515,390517, 390518, 390519, 390537, 390538, 390539, 390540, 390541, 390542, 390613,390653, 390667, 390669, 390670, 390674, 390942, 390943, 390944, 390946, 390958,390961, 390965, 390966, 391036, 391041, 391047, 391049, 391050, 391051, 391100,391174, 391175, 391177, 391371, 391374, 391375, 391377, 391442, 391445, 391446,391447, 391449, 391450, 391465, 391466, 391467, 391468, 391469, 391470, 391471,391566, 391567, 391569, 391573, 391579, 391583, 391584, 391585, 391588, 391722,391813, 391815, 391817, 391857, 391860, 391861, 391863, 391870, 391871, 391872,391873, 391875, 391876, 391966, 391967, 391968, 391969, 391982, 391998, 392014,392015, 392021, 392022, 392023, 392027, 392028, 392102, 392104, 392106, 392152,392155, 392157, 392160, 392162, 392225, 392226, 392227, 392228, 392267, 392276,392279, 392281, 392282, 392292, 392293, 392294, 392296, 392297, 392298, 392299,392355, 392359, 392415, 392418, 392420, 392421, 392422, 392428, 392429, 392430,392431, 392540, 392542, 392545, 392546, 392548, 392712, 392713, 392714, 392715,392716, 392814, 392818, 392819, 392821, 392836, 392838, 392840, 392842, 392845,392846, 392848, 392922, 392923, 392925, 392926, 392934, 392942, 392943, 392944,392947, 393051, 393054, 393056, 393061, 393062, 393064, 393066, 393067, 393068,393341, 393342, 393343, 393345, 393349, 393351, 393457, 393458, 393461, 393462,393464, 393469, 393471, 393478, 393481, 393482, 393483, 393484, 393485, 393486,393487, 393529, 393530, 393531, 393534, 393574, 393575, 393576, 393577, 393578,393579, 393581, 393616, 393619, 393627, 393628, 393677, 393795, 393805, 393809,393810, 393883, 393885, 393886, 393888, 393890, 393891, 393898, 393901, 393902,393905, 394002, 394003, 394004, 394005, 394048, 394049, 394050, 394054, 394055,394056, 394057, 394061, 394062, 394065, 394066, 394067, 394068, 394069, 394070,394072, 394272, 394368, 394388, 394389, 394390, 394391, 394398, 394400, 394402,394416, 394417, 394420, 394421, 394422, 394423, 394526, 394534, 394538, 394539,394671, 394676, 394677, 394679, 394682, 394683, 394684, 394698, 394700, 394701,394702, 394703, 394704, 394739, 394742, 394743, 394744, 394745, 394748, 394750,394962, 394963, 394964, 394965, 394968, 394969, 394970, 394976, 394977, 394978,394979, 394980, 394981, 394982, 395096, 395098, 395099, 395102, 395103, 395228,395229, 395230, 395231, 395233, 395238, 395239, 395242, 395244, 395389, 395390,395396, 395397, 395398, 395402, 395405, 395407, 395408, 395411, 395412, 395413,395419, 395420, 395430, 395432, 395526, 395527, 395544, 395545, 395549, 395550,395551, 395552, 395553, 395587, 395588, 395589, 395590, 395591, 395592, 395593,395594, 395595, 395599, 395639, 395640, 395641, 395642, 395643, 395645, 395646,395731, 395732, 395733, 395768, 395769, 395770, 395771, 395776, 395777, 395808,395809, 395811, 395813, 395816, 395817, 395884, 395899, 395901, 395907, 395908,395940, 396049, 396050, 396054, 396056, 396058, 396065, 396066, 396070, 396073,396074, 396075, 396268, 396274, 396276, 396277, 396279, 396280, 396363, 396366,396412, 396414, 396415, 396417, 396418, 396433, 396434, 396435, 396437, 396438,396439, 396440, 396544, 396545, 396546, 396547, 396549, 396552, 396554, 396560,396561, 396563, 396612, 396614, 396615, 396616, 396617, 396618, 396619, 396627,396628, 396629, 396630, 396631, 396633, 396634, 396635, 396636, 396677, 396678,396680, 396681, 396682, 396683, 396684, 396760, 396761, 396764, 396765, 396766,396767, 396768, 396790, 396799, 396802, 396803, 396887, 396888, 396889, 396910,396911, 396914, 396915, 396919, 396921, 396993, 396994, 396995, 396997, 396998,396999, 397000, 397066, 397067, 397068, 397069, 397070, 397181, 397182, 397184,397290, 397291, 397293, 397294, 397297, 397313, 397315, 397316, 397317, 397318,397319, 397320, 397322, 397401, 397402, 397403, 397404, 397431, 397432, 397434,397436, 397437, 397438, 397511, 397513, 397515, 397517, 397519, 397520, 397524,397525, 397526, 397527, 397531, 397532, 397534, 397535, 397581, 397585, 397587,397588, 397589, 397590, 397692, 397700, 397702, 397705, 397706, 397708, 397710,397711, 397712, 397714, 397715, 397735, 397737, 397738, 397866, 397867, 397917,397933, 397934, 397938, 398119, 398120, 398122, 398123, 398124, 398125, 398130,398133, 398137, 398138, 398140, 398142, 398144, 398145, 398146, 398147, 398148,398149};
+
+const float Run13Jet::lowRateRuns[67] = {386773, 386775, 386776, 386777, 386826, 386828, 386829, 386830, 386833, 386839, 386841, 386843, 386844, 386883, 386884, 386951, 386952, 386954, 387414, 387423, 387424, 387428, 387431, 387433, 387436, 387539, 387543, 387550, 387551, 387725, 388548, 388640, 388840, 388866, 389762, 389765, 389766, 389767, 389768, 389909, 390026, 390029, 390030, 390031, 390032, 390033, 390039, 390175, 390176, 390237, 390239, 390318, 390319, 390424, 390511, 390512, 390515, 390517, 390518, 390519, 390613, 390653, 391968, 391969, 393066, 395398, 396563};
+
+bool Run13Jet::goodRun(int runnumber){
+
+  bool retval = false;
+
+  for(int i = 0; i < 780; i++){
+    if(goodRunArray[i] == runnumber){
+      retval = true;
+      break;
+    }
+  }//end i
+
+  return retval;
+
+}//end goodRun()
+
+bool Run13Jet::lowRate(int runnumber){
+
+  bool retval = false;
+
+  for(int i = 0; i < 67; i++){
+    if((int)lowRateRuns[i] == runnumber){
+      retval = true;
+      break;
+    }
+  }//end i
+
+  return retval;
+
+}//end lowRate()
+
+float Run13Jet::phiReduce(float phi){
+  
+  if (phi < -TMath::PiOver2())
+    {
+      phi += TMath::TwoPi();
+    }
+  if (phi >= 3.0 * TMath::PiOver2())
+    {
+      phi -= TMath::TwoPi();
+    }
+
+  return phi;
+  
+}//end phireduce()
+
+int Run13Jet::InitRun(PHCompositeNode *topNode)
+{
+  if (verbo)
+    {
+      cout << ">>>>>>>>>>>>>>>>>>>> InitRun called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+    }
+
+  run_header = getClass<RunHeader> (topNode, "RunHeader");
+  if (!run_header)
+    {
+      cout << "No RunHeader! No sense continuing" << endl;
+      exit(1);
+    }
+
+  runNumber = run_header->get_RunNumber();
+  eventNumber = 0;//initialize eventnumber
+
+  triggerHelper = new TriggerHelper(topNode);
+
+  SpinDBOutput spin_out("phnxrc");
+  
+  int storedbcont = spin_out.StoreDBContent(runNumber, runNumber);
+  if(storedbcont != 1) cout << "didn't get Database content" << endl;
+
+  int getdbcontstore = spin_out.GetDBContentStore(spin_cont, runNumber);
+  if(getdbcontstore != 1) cout << "didn't get Database content" << endl;
+  
+  if(spin_out.CheckRunRowStore(runNumber) != 1){
+    cout << "ERROR: spin db runnumber doesn't agree" << endl;
+  }
+
+  //read in TOF corrections
+  int fillNumber = spin_cont.GetFillNumber(); 
+  ReadTOFMap(fillNumber);
+
+  //read in mean num of collisions (Mu)
+  ReadMuTree(runNumber);
+  
+  return EVENT_OK;
+
+}//end InitRun()
+
+
+int Run13Jet::process_event(PHCompositeNode *topNode)
+{
+  //Run-13 runs
+  if(runNumber < 386773 || runNumber > 398149)
+    {
+      return DISCARDEVENT;
+    }
+
+
+  if(!goodRun(runNumber)){//check if it's a good run
+    return DISCARDEVENT;
+  }
+
+  isLowRate = lowRate(runNumber);
+
+  //Make trigger selection
+  lvl1trigger = getClass<TrigLvl1>(topNode, "TrigLvl1");
+
+  if(!isMB){//if running over ERT
+
+    int ertFired = 0;
+    if(//(lvl1trigger->get_lvl1_trigscaled()&ERT_BIT_MASK_A) ||
+       (lvl1trigger->get_lvl1_trigscaled()&ERT_BIT_MASK_B))
+       //(lvl1trigger->get_lvl1_trigscaled()&ERT_BIT_MASK_C))
+      {
+	ertFired = 1;
+      }
+    
+    if(!ertFired)
+      {
+	return DISCARDEVENT;
+      }
+  }//endif NOT MinBias
+
+  int lvl1trigger_clock_cross = lvl1trigger->get_lvl1_clock_cross(); 
+
+  //Get the data I need...
+  phglobal = getClass<PHGlobal>(topNode, "PHGlobal");
+  if (nTotalEvents == 1 && !phglobal)
+    {
+      cout << "No PHGlobal!  No sense continuing" << endl;
+      exit(1);
+    }
+
+  evtheader = getClass<EventHeader>(topNode, "EventHeader");
+  if (nTotalEvents == 1 && !evtheader)
+    {
+      cout << "No EventHeader! No sense continuing" << endl;
+      exit(1);
+    }
+
+  //Vertex
+  zVertex = phglobal->getBbcZVertex();
+  hVertex->Fill(zVertex);
+
+  //These are the events for the trigger selection and good runs
+  nTotalEvents++;
+
+  // Informational message...
+  if (nTotalEvents % 100000 == 0 && verbosity)
+    {
+      if (verbo)
+	{
+	  cout << "Events analyzed for run " << runNumber << " = " << nTotalEvents << endl;
+	}
+    }
+
+  //Vertex cut
+  if (fabs(zVertex) > VERTEX_CUT)
+    {
+      return DISCARDEVENT;
+    }
+
+  nGoodEvents++;
+  if(isLowRate) nGoodEvents_low++;
+  else nGoodEvents_high++;
+  
+  int qaLevel = spin_cont.GetQALevel();
+  int fillNumber = spin_cont.GetFillNumber();
+  int crossingShift = spin_cont.GetCrossingShift();
+
+  float bpol = 0, ypol = 0, bpolerror = 0, ypolerror = 0;
+  spin_cont.GetPolarizationBlue(lvl1trigger_clock_cross, bpol, bpolerror);
+  spin_cont.GetPolarizationYellow(lvl1trigger_clock_cross, ypol, ypolerror);
+
+  int bspin = spin_cont.GetSpinPatternBlue(lvl1trigger_clock_cross);
+  int yspin = spin_cont.GetSpinPatternYellow(lvl1trigger_clock_cross);
+
+  int spinPattern = -9999; //from mpcexSpin (might be a good way to group things)
+  if(bspin == 1 && yspin == 1) {
+    spinPattern=0;
+  } else if( bspin == -1 && yspin == 1) { 
+    spinPattern=1;
+  } else if( bspin ==  1 && yspin ==-1) { 
+    spinPattern=2;
+  } else if( bspin == -1 && yspin ==-1) { 
+    spinPattern=3;
+  } else {                     
+    spinPattern=4;
+  }
+ 
+  //Get tracks from this event
+  //GetTracks(topNode, tracks_list);
+
+  //Get clusters from this event
+  // GetClusters(topNode, clusters_list, zVertex);
+
+  //Get particles from this event
+  float bbcT0 = phglobal->getBbcTimeZero();
+  GetParticles(topNode, charged_particles, neutral_particles, zVertex, bbcT0, isData);
+  
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  //Make anti-kt jet here
+  ////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  float R = 0.3;
+  fastjet::JetDefinition *antikt = new fastjet::JetDefinition(fastjet::antikt_algorithm, R, fastjet::E_scheme, fastjet::Best);
+
+  std::vector<fastjet::PseudoJet> jetParticles_all;
+  jetParticles_all.clear();
+
+  const int indexTotal = charged_particles.size() + neutral_particles.size();
+  unsigned int indexCharged = charged_particles.size();
+
+  float particlePt[indexTotal];
+  fill(particlePt, particlePt + indexTotal / sizeof(float), -999.9);
+  bool particleErtTrigger[indexTotal];
+  fill(particleErtTrigger, particleErtTrigger + indexTotal / sizeof(bool), false);
+  for(int i = 0; i < indexTotal; i++){
+
+    particlePt[i] = -999.9;
+    particleErtTrigger[i] = false;
+
+  }//end i
+
+  int index = 0;
+  for (unsigned int h = 0; h < charged_particles.size(); h++)
+    {
+      fastjet::PseudoJet pseudoCharged(charged_particles[h].px,
+				       charged_particles[h].py,
+				       charged_particles[h].pz,
+				       charged_particles[h].mom);
+      pseudoCharged.set_user_index(index);
+      particlePt[index] = charged_particles[h].pT;
+      particleErtTrigger[index] = false;
+      jetParticles_all.push_back(pseudoCharged);
+      index++;
+    }
+
+  for (unsigned int n = 0; n < neutral_particles.size(); n++)
+    {
+      fastjet::PseudoJet pseudoNeutral(neutral_particles[n].px,
+				       neutral_particles[n].py,
+				       neutral_particles[n].pz,
+				       neutral_particles[n].energy);
+      pseudoNeutral.set_user_index(index);
+      particlePt[index] = neutral_particles[n].pT;
+      particleErtTrigger[index] = neutral_particles[n].ertFired;
+      jetParticles_all.push_back(pseudoNeutral);
+      index++;
+    }
+
+  fastjet::ClusterSequence jetAll(jetParticles_all, *antikt);
+  std::vector<fastjet::PseudoJet> fastAll = jetAll.inclusive_jets();
+  
+  for (unsigned int n = 0; n < fastAll.size(); n++)
+    {
+      fastjet::PseudoJet aFastJet = fastAll[n];
+
+      float chargedPt    = 0.0;
+
+      float jetPt  = aFastJet.perp();
+      float jetEta = aFastJet.pseudorapidity();
+      float jetPhi = phiReduce(aFastJet.phi());
+
+      vector<fastjet::PseudoJet> constituents = jetAll.constituents(aFastJet);
+      unsigned int nconst = constituents.size();
+
+      ertTriggerFired = false;
+      for (unsigned int iconst = 0; iconst < nconst; iconst++)
+	{
+	  unsigned int indx = constituents[iconst].user_index();
+
+	  if (indx < indexCharged)//Charged particles
+	    {
+	      chargedPt += particlePt[indx];
+	    }
+	  else  //Neutral particles
+	    {
+	      if(particleErtTrigger[indx] == true)
+		{
+		  ertTriggerFired = true;
+		}
+	    }
+	}//end iconst
+
+      int jetArm = 1;
+      if (jetPhi > 1.57)
+	{
+	  jetArm = 0;
+	}
+
+      if(ertTriggerFired==false)
+	{
+	  continue;
+	}
+      
+      float jetCf = chargedPt / jetPt;
+
+      //Jet selection
+      bool passJetLevelCuts = (jetPt > 6.0) && ((float)nconst >= 3.0);
+      if(!passJetLevelCuts)
+	{
+	  continue;
+	}
+
+      //ToF cut
+      if(abs(neutral_particles[n].tof) > 15) continue;
+
+      //fill the charge fraction histograms
+      hCf->Fill(jetCf);
+      if(jetArm == 0) hCf_0->Fill(jetCf);
+      else hCf_1->Fill(jetCf);
+      
+      //jetpT > 14, 10, 12 cuts
+      if(jetPt > 14.0) hCf_14->Fill(jetCf);
+      if(jetPt > 10.0) hCf_10->Fill(jetCf);
+      if(jetPt > 12.0) hCf_12->Fill(jetCf);
+      
+      if(isLowRate){
+	
+	hCf_low->Fill(jetCf);
+	if(jetArm == 0) hCf_low_0->Fill(jetCf);
+	else hCf_low_1->Fill(jetCf);
+	
+	//jetpT > 14, 10, 12 cuts
+	if(jetPt > 14.0) hCf_low_14->Fill(jetCf);
+	if(jetPt > 10.0) hCf_low_10->Fill(jetCf);
+	if(jetPt > 12.0) hCf_low_12->Fill(jetCf);
+	  
+      }//endif lowRate
+      else{
+	
+	hCf_high->Fill(jetCf);
+	if(jetArm == 0) hCf_high_0->Fill(jetCf);
+	else hCf_high_1->Fill(jetCf);
+	
+	//jetpT > 14, 10, 12 cuts
+	if(jetPt > 14.0) hCf_high_14->Fill(jetCf);
+	if(jetPt > 10.0) hCf_high_10->Fill(jetCf);
+	if(jetPt > 12.0) hCf_high_12->Fill(jetCf);
+	
+      }//else highRate
+
+      //jet charge fraction cut
+      if(jetCf < 0.2 || jetCf > 0.7) continue; 
+  
+      //fill the hJets histograms
+      hJets->Fill(jetPt);
+      if(jetArm == 0) hJets_0->Fill(jetPt);
+      else hJets_1->Fill(jetPt);
+      if(isLowRate){
+	
+	hVertex_low->Fill(zVertex);
+	
+	hJets_low->Fill(jetPt);
+	if(jetArm == 0) hJets_low_0->Fill(jetPt);
+	else hJets_low_1->Fill(jetPt);
+	
+      }//endif lowRate
+      else{
+	  
+	hVertex_high->Fill(zVertex);
+	
+	hJets_high->Fill(jetPt);
+	if(jetArm == 0) hJets_high_0->Fill(jetPt);
+	else hJets_high_1->Fill(jetPt);
+	
+      }//endif highRate
+      
+      jets temp;
+      temp.arm           = jetArm;
+      temp.pT            = jetPt;
+      temp.eta           = jetEta;
+      temp.phi           = jetPhi;
+      temp.nc            = nconst;
+      temp.cf            = jetCf;
+      temp.qaLevel       = qaLevel;
+      temp.fillNumber    = fillNumber;
+      temp.crossingShift = crossingShift;
+      temp.bpol          = bpol;
+      temp.ypol          = ypol;
+      temp.bpolerror     = bpolerror;
+      temp.ypolerror     = ypolerror;
+      temp.bspin         = bspin;
+      temp.yspin         = yspin;
+      temp.spinPattern   = spinPattern;
+      temp.lvl1trig_clk_cross = lvl1trigger_clock_cross;
+
+      jets_list.push_back(temp);
+
+      nJets++;
+    }//end n
+
+  delete antikt;
+  /////////////////////////////////////////////////////////////////////////////////////////////////////////
+  
+  //Fill Trees
+  FillTrees(writeTree);
+
+  eventNumber++;//incriment eventnum
+
+  // any other return code might lead to aborting the event or analysis
+  return EVENT_OK;
+}
+
+int Run13Jet::ResetEvent(PHCompositeNode *topNode)
+{
+  charged_particles.clear();
+  neutral_particles.clear();
+  jets_list.clear();
+
+  return EVENT_OK;
+}
+
+
+int Run13Jet::EndRun(const int runNumber)
+{
+  if (verbo)
+    {
+      cout << ">>>>>>>>>>>>>>>>>>>  EndRun called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+    }
+
+  double mu = getMu();//mean number of crossings
+
+  //float scaledownMB = 0;
+  float scaledownERT = 0;
+
+  if(isMB){
+
+    //scaledownMB = triggerHelper->getLevel1Scaledown("BBCLL1(>0 tubes) narrowvtx");
+    scaledownERT = triggerHelper->getLevel1Scaledown("ERT_4x4b");
+
+  }//endif isMB
+
+  float nEffectiveEvents = 0;
+  
+  if(mu < 1.0) nEffectiveEvents = (float)nGoodEvents*(1 + scaledownERT);
+  else nEffectiveEvents = (float)nGoodEvents*mu*(1 + scaledownERT);
+
+  hEffectiveEvents->SetBinContent(1, nEffectiveEvents);
+  hEffectiveEvents->SetBinContent(hEffectiveEvents->GetBin(3.0), nGoodEvents);
+
+  if(isLowRate){
+    
+    if(mu < 1.0) nEffectiveEvents = (float)nGoodEvents_low*(1 + scaledownERT);
+    else nEffectiveEvents = (float)nGoodEvents_low*mu*(1 + scaledownERT);
+
+    hEffectiveEvents_low->SetBinContent(1, nEffectiveEvents); 
+    hEffectiveEvents_low->SetBinContent(hEffectiveEvents_low->GetBin(3.0), nGoodEvents_low); 
+
+  }//endif lowRate
+  else{ 
+
+    if(mu < 1.0) nEffectiveEvents = (float)nGoodEvents_high*(1 + scaledownERT);
+    else nEffectiveEvents = (float)nGoodEvents_high*mu*(1 + scaledownERT);
+
+    hEffectiveEvents_high->SetBinContent(1, nEffectiveEvents); 
+    hEffectiveEvents_high->SetBinContent(hEffectiveEvents_high->GetBin(3.0), nGoodEvents_high);
+
+  }//else highRate
+
+  hERTscdwnVsRun->Fill(runNumber, scaledownERT);
+  if(mu > 1) hMuVsRun->Fill(runNumber, mu);
+  hEffectiveEventsVsRun->Fill(runNumber, nEffectiveEvents);
+  
+  cout << "mu:  "  << mu << "   ERT:  " << scaledownERT << endl;
+  cout << "good evt:  " << nGoodEvents << "   eff evt:  " << nEffectiveEvents << endl;
+  if (verbo)
+    {
+      std::ios_base::fmtflags originalFlags = std::cout.flags();
+
+      cout.precision(3);
+      cout << "+++++++++++++  Statistics:     +++++++++++++++++++" << endl;
+      cout << "Run number:                                            " << runNumber << endl;
+      cout << "Number of total events for this run:                   " << nTotalEvents << endl;
+      cout << "Number of good events for this run:                   " << nGoodEvents << endl;
+
+      cout << "++++++++++  Statistics: Jets   +++++++++++++++++" << endl;
+      cout << "++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+      //cout << "Number of total Jets (Anti-kt, R = 0.3) for this run:  " << setw(5) << nJets << endl;
+      std::cout.flags(originalFlags);
+    }
+
+  return EVENT_OK;
+}
+
+int Run13Jet::End(PHCompositeNode *topNode)
+{
+  if (verbo)
+    {
+      cout << ">>>>>>>>>>>>>>>>>>>  End called <<<<<<<<<<<<<<<<<<<<<<<" << endl;
+    }
+
+  hEvents->SetBinContent(1, nTotalEvents);
+  hEvents->SetBinContent(2, nGoodEvents);
+  hEvents->SetBinContent(3, eventNumber);
+
+  outfile->Write();
+  outfile->Close();
+
+  delete triggerHelper;
+
+  return EVENT_OK;
+}
+
+
+void Run13Jet::GetTracks(PHCompositeNode *topNode, std::vector<tracks>& track_list)
+{
+  PHCentralTrack *phcentral = getClass<PHCentralTrack>(topNode, "PHCentralTrack");
+  if (!phcentral)
+    {
+      cout << "No PHCentral!  No sense continuing" << endl;
+      exit(1);
+    }
+
+  for (unsigned int i = 0; i < phcentral->get_npart(); i++)
+    {
+      float mom           = phcentral->get_mom(i); // Magnitude of the momentum.
+      float theta         = phcentral->get_the0(i); //The track's theta direction at the vertex
+      float pT            = mom * sin(theta);
+      float eta           = (float)(-log(tan(0.5 * theta)));
+      float phi           = phcentral->get_phi0(i); // The track's phi direction at the vertex
+      float phiDC         = phcentral->get_phi(i); // The phi coordinate at which the track crosses the drift chamber reference radius
+      float zedDC         = phcentral->get_zed(i); //The Z coordinate at which the track crosses PC1
+      float alpha         = phcentral->get_alpha(i); // This is the inclination of the track w.r.t. an infinite momentum track
+      float energy        = phcentral->get_ecore(i); // EMC "shower core" energy
+
+      int charge          = phcentral->get_charge(i);
+      int quality         = phcentral->get_quality(i); // Quality of the Drift Chamber Tracks
+      int n0              = phcentral->get_n0(i); //The number of phototubes that fired in the normally sized ring area
+      int arm             = phcentral->get_dcarm(i); //Arm containing the track (East=0, West=1)
+      int sector          = phcentral->get_sect(i); //EMC sector of the associated cluster
+      int emcid           = phcentral->get_emcid(i); // Index of the emc cluster used
+
+      float pc3dphi       = phcentral->get_pc3dphi(i);
+      float pc3sdphi      = phcentral->get_pc3sdphi(i);
+      float pc3dz         = phcentral->get_pc3dz(i);
+      float pc3sdz        = phcentral->get_pc3sdz(i);
+      float emcdphi       = phcentral->get_emcdphi(i);
+      float emcsdphi      = phcentral->get_emcsdphi(i);
+      float emcdz         = phcentral->get_emcdz(i);
+      float emcsdz        = phcentral->get_emcsdz(i);
+
+      float beta          = phcentral->get_beta(i);
+
+      float px = pT * cos(phi);
+      float py = pT * sin(phi);
+      float pz = mom * cos(theta);
+      float eT = energy * sin(theta);
+
+      int armsect = -99;
+      if (arm == 1)
+	{
+	  armsect = sector;
+	}
+      else
+	{
+	  armsect = 4 + sector;
+	}
+
+      if(armsect == -99) continue;
+
+      float board = -9999.99;
+      board = TrackQualityPP::getBoard(phiDC, arm);
+
+      //Track selection
+      bool passPt = (pT > TRACK_MIN_PT_CUT);
+      bool passZedDC = fabs(zedDC) < 75.0;
+      // bool passQuality = (quality == 63) || (quality == 31);
+      bool passQuality = TrackQualityPP::passQualityMask(quality, phiDC, alpha, zedDC, arm);
+
+      bool minRequirement = passPt && passZedDC && passQuality;
+      if(!minRequirement) continue;
+      
+      hPC3dphi->Fill(pc3dphi);
+      hPC3dz->Fill(pc3dz);
+
+      hEMCdphi->Fill(emcdphi);
+      hEMCdz->Fill(emcdz);
+
+      //for quality mask
+      bool x1Used = ((quality & X1_USED) == X1_USED);
+      bool x2Used = ((quality & X2_USED) == X2_USED);
+      bool uvUsed = ((quality & UV_FOUND_UNIQUE) == UV_FOUND_UNIQUE);
+
+      int ized = -999;
+      if(zedDC > -75 && zedDC <= -60){
+	ized = 0;
+      }
+      else if(zedDC > -60 && zedDC <= -45){
+	ized = 1;
+      }
+      else if(zedDC > -45 && zedDC <= -30){
+	ized = 2;
+      }
+      else if(zedDC > -30 && zedDC <= -15){
+	ized = 3;
+      }
+      else if(zedDC > -15 && zedDC <= 0){
+	ized = 4;
+      }
+      else if(zedDC > 0 && zedDC <= 15){
+	ized = 5;
+      }
+      else if(zedDC > 15 && zedDC <= 30){
+	ized = 6;
+      }
+      else if(zedDC > 30 && zedDC <= 45){
+	ized = 7;
+      }
+      else if(zedDC > 45 && zedDC <= 60){
+	ized = 8;
+      }
+      else if(zedDC > 60 && zedDC <= 75){
+	ized = 9;
+      }
+    
+      int icent = 0;//don't have to worry about centrality
+
+      if(ized == -999) continue;
+      // *********  Calculate pc3 dphi and dz  ***************
+      
+      float pc3dphi_initial = CalcPC3(pT, charge, arm, ized, icent, pc3dphi, INITIAL, DPHI);
+      float pc3dphi_intermediate = CalcPC3(pT, charge, arm, ized, icent, pc3dphi_initial, INTERMEDIATE, DPHI);
+      pc3sdphi = pc3dphi_intermediate;//save to ntuple
+
+      float pc3dz_initial = CalcPC3(pT, charge, arm, ized, icent, pc3dz, INITIAL, DZ);
+      float pc3dz_intermediate = CalcPC3(pT, charge, arm, ized, icent, pc3dz_initial, INTERMEDIATE, DZ);
+      pc3sdz = pc3dz_intermediate;//save to ntuple
+      
+      //******** Calculate EMC dphi and dz *************
+      float emcdphi_initial = CalcEMC(pT, charge, armsect, ized, icent, emcdphi, INITIAL, DPHI);
+      float emcdphi_intermediate =  CalcEMC(pT, charge, armsect, ized, icent, emcdphi_initial, INTERMEDIATE, DPHI);
+      emcsdphi = emcdphi_intermediate;//save to ntuple
+      
+      float emcdz_initial = CalcEMC(pT, charge, armsect, ized, icent, emcdz, INITIAL, DZ);
+      float emcdz_intermediate = CalcEMC(pT, charge, armsect, ized, icent, emcdz_initial, INTERMEDIATE, DZ);
+      emcsdz = emcdz_intermediate;//save to ntuple
+
+      bool pc3Matching = sqrt((pc3sdphi*pc3sdphi) + (pc3sdz*pc3sdz)) < 3.0;//pc3Matching cut
+      bool emcMatching =  sqrt((emcsdphi*emcsdphi) + (emcsdz*emcsdz)) < 3.0;//emcMatching cut
+      bool passMatching = pc3Matching || emcMatching;
+      
+      if(!passMatching) continue;//matching cut
+      bool passDC = passPt && passQuality && passZedDC && armsect>=0 && armsect<=7;
+      bool passFirst = passPt && passQuality && passMatching && passZedDC;
+      
+      tracks temp;
+      temp.mom            = mom;
+      temp.theta          = theta;
+      temp.pT             = pT;
+      temp.eta            = eta;
+      temp.phi            = phi;
+      temp.phiDC          = phiDC;
+      temp.zedDC          = zedDC;
+      temp.alpha          = alpha;
+      temp.energy         = energy;
+      temp.board          = board;
+
+      temp.charge         = charge;
+      temp.quality        = quality;
+      temp.n0             = n0;
+      temp.arm            = arm;
+      temp.armsect        = armsect;
+      temp.emcid          = emcid;
+
+      temp.px             = px;
+      temp.py             = py;
+      temp.pz             = pz;
+      temp.eT             = eT;
+
+      temp.pc3dphi        = pc3dphi;
+      temp.pc3dz          = pc3dz;
+      temp.pc3sdphi       = pc3sdphi;
+      temp.pc3sdz         = pc3sdz;
+      temp.emcdphi        = emcdphi;
+      temp.emcdz          = emcdz;
+      temp.emcsdphi       = emcsdphi;
+      temp.emcsdz         = emcsdz;
+
+      temp.x1Used         = x1Used;
+      temp.x2Used         = x2Used;
+      temp.uvUsed         = uvUsed;
+
+      temp.runnumber      = runNumber;
+      temp.eventnumber    = eventNumber;
+
+      temp.passDC         = passDC; 
+      temp.passQuality    = passQuality;
+      temp.passMatching   = passMatching;
+      temp.passFirst      = passFirst;
+
+      track_list.push_back(temp);
+    }
+
+}//end gettracks()
+
+
+void Run13Jet::GetClusters(PHCompositeNode *topNode, std::vector<clusters>& cluster_list, float vertex)
+{
+  //The number of towers is 48(y) x 96(z) x 2(PbGl) + 36(y) x 72(z) x 6(PbSc) = 9216+15552 = 24768.
+  //Tower ID is a unique ID of all towers in eight sectors (0~24767).
+  emcClusterContainer *emcclustercontainer = getClass<emcClusterContainer>(topNode, "emcClusterContainer");
+  if (!emcclustercontainer)
+    {
+      cout << "No emcClusterContainer!  No sense continuing" << endl;
+      exit(1);
+    }
+
+  //For ERT trigger
+  ertOut = getClass<ErtOut>(topNode, "ErtOut");
+  if (!ertOut)
+    {
+      cout << "No ertOut!  No sense continuing" << endl;
+      exit(1);
+    }
+   
+  float bbc_t0 = phglobal->getBbcTimeZero();
+    
+  int Nclus = emcclustercontainer->size();
+  for (int iclus = 0; iclus < Nclus; iclus++)
+    {
+      clus = emcclustercontainer->getCluster(iclus);
+      int arm         = clus->arm(); //In EMCal convention, West Arm is 0 and East Arm is 1, and thus armsector 0...7 are W0...W3 E0...E3
+      int sector      = clus->sector();
+      int emcid       = clus->id();
+      float energy    = clus->ecore();
+      float prob      = clus->prob_photon();
+      float chi2      = clus->chi2();
+
+      //need to construct cluster theta and pT
+      float x         = clus->x();
+      float y         = clus->y();
+      float z         = clus->z() - vertex;
+      float theta     = clus->theta();//acos(z / sqrt(x * x + y * y + z * z));
+      float tof       = clus->tof() - bbc_t0;//TOF of the central tower, minus the flash time (=sqrt(x2+y2+z2)/30.0)) Unit ns.
+
+      TVector3 v3;
+      TLorentzVector v4;
+      v3.SetXYZ(x, y, z);
+      v3 = energy * v3.Unit();
+      v4.SetT(energy);
+      v4.SetVect(v3);
+
+      float pT        = v4.Pt();
+      if(pT == 0) continue;//protect against eta crash
+      float phi       = phiReduce(v4.Phi());
+      float px        = v4.Px();
+      float py        = v4.Py();
+      float pz        = v4.Pz();
+      float eta       = v4.Eta();
+      float eT        = v4.Et();
+
+      int yTowerPos   = clus->iypos();
+      int zTowerPos   = clus->izpos();
+
+      int armsect     = (arm * 4) + sector; //Arm for emcal is different
+
+      int towerId         = EmcMap::GetTowerID(armsect, yTowerPos, zTowerPos);
+      bool passIsValid    = EmcMap::IsValidYZ(armsect, yTowerPos, zTowerPos);
+      bool passNotBad     = !EmcMap::IsBad(armsect, yTowerPos, zTowerPos);
+
+      //ERT information; ertBit: 0=4x4a, 1=4x4b, 2=4x4c
+      int ertSM = (arm == 1 && sector < 2)  ?  (yTowerPos / 12) * 8 + zTowerPos / 12  :  (yTowerPos / 12) * 6 + zTowerPos / 12;
+      int ert4x4A = ertOut->get_ERTbit(0, arm, sector, ertSM);
+      int ert4x4B = ertOut->get_ERTbit(1, arm, sector, ertSM);
+      int ert4x4C = ertOut->get_ERTbit(2, arm, sector, ertSM);
+
+      //bool ertFired = ert4x4A || ert4x4B || ert4x4C;
+      bool ertFired = ert4x4C;
+
+      //Cluster selection
+      bool passEnergy = energy > CLUSTER_MIN_ENERGY_CUT;
+      bool passEverything = passIsValid && passNotBad && passEnergy;
+
+      if(!passEverything)
+	{
+	  continue;
+	}
+
+      //Additional hot towers- temp soln
+      if(towerId == 628 || towerId == 2346 || towerId == 2418 ||
+
+	 towerId == 2764 || towerId == 2839 ||
+
+	 towerId == 5361 || towerId == 5512 || towerId == 5797 || towerId == 5800 ||
+	 towerId == 5855 || towerId == 5870 || towerId == 5935 || towerId == 5948 ||
+	 towerId == 6019 || towerId == 7038 ||
+
+	 towerId == 8749 || towerId == 8823 || towerId == 8826 || towerId == 9549 ||
+	 towerId == 9762 || towerId == 9891 ||
+	 towerId == 8820 || towerId == 8821 || towerId == 8892 || towerId == 8893 ||
+	 towerId == 8966 || towerId == 8967 || towerId == 9600 || towerId == 9601 ||
+
+	 towerId == 11958 || towerId == 11959 || towerId == 11960 || towerId == 12030 ||
+	 towerId == 12031 || towerId == 12102 || towerId == 12103 || towerId == 12104 ||
+	 towerId == 12105 || towerId == 12174 || towerId == 12175 || towerId == 12176 ||
+	 towerId == 12177 ||
+
+	 towerId == 13660 || towerId == 13661 || towerId == 13662 || towerId == 13664 ||
+	 towerId == 13728 || towerId == 13729 || towerId == 13734 || towerId == 13735 ||
+	 towerId == 13736 || towerId == 14033 || towerId == 14081 || towerId == 14105 ||
+	 towerId == 14152 || towerId == 14176 || towerId == 14177 || towerId == 14224 ||
+	 towerId == 14225 || towerId == 14249 || towerId == 14296 || towerId == 14368 ||
+	 towerId == 14377 || towerId == 14513 || towerId == 14585 || towerId == 14605 ||
+	 towerId == 13094 || towerId == 13095 || towerId == 13166 || towerId == 13167 ||
+	 towerId == 13239 || towerId == 13240 ||
+
+	 towerId == 16558 || towerId == 16840 || towerId == 16935 || towerId == 16936 ||
+	 towerId == 17517 || towerId == 17724 || towerId == 17796 || towerId == 18258 ||
+	 towerId == 18414 || towerId == 18784 || towerId == 19292 || towerId == 19333 ||
+	 towerId == 18688 || towerId == 18785 || towerId == 18880 || towerId == 18891 ||
+
+	 towerId == 21625 || towerId == 21692 || towerId == 22146 || towerId == 22607 ||
+	 towerId == 22726 || towerId == 23046 || towerId == 23958 || towerId == 23964 ||
+	 towerId == 24269 || towerId == 24539 || towerId == 24656 || towerId == 23045 ||
+	 towerId == 21691 || towerId == 23047 || towerId == 22725 || towerId == 22727)
+	{
+
+	  continue;
+	}
+
+      hTowerE->Fill(towerId, energy);
+      hClustersTower->Fill(towerId);
+      hSectorHits[armsect]->Fill(zTowerPos, yTowerPos);
+
+      //Convert EMC arm to DC convention
+      if(arm == 0)
+	{
+	  arm = 1;
+	}
+      else
+	{
+	  arm = 0;
+	}
+
+      clusters temp;
+      temp.arm             = arm;
+      temp.sector          = sector;
+      temp.armsect         = armsect;
+      temp.emcid           = emcid;
+      temp.yTowerPos       = yTowerPos;
+      temp.zTowerPos       = zTowerPos;
+      temp.towerId         = towerId;
+
+      temp.ertFired        = ertFired;
+
+      temp.energy          = energy;
+      temp.theta           = theta;
+      temp.pT              = pT;
+      temp.eT              = eT;
+      temp.phi             = phi;
+      temp.px              = px;
+      temp.py              = py;
+      temp.pz              = pz;
+      temp.eta             = eta;
+      temp.chi2            = chi2;
+      temp.prob            = prob;
+      temp.runnumber       = runNumber;
+      temp.eventnumber     = eventNumber;
+      temp.tof             = tof;
+
+      temp.passIsValid = passIsValid;
+      temp.passNotBad = passNotBad;
+      temp.passEnergy = passEnergy;
+      temp.passEverything = passEverything;
+
+      cluster_list.push_back(temp);
+
+    }//end iclus
+
+}//end getclusters
+
+
+void Run13Jet::InitHistograms()
+{
+  
+  //for checking dphi vs dz
+  hDphiDzAllC = new TH2F("hDphiDzAllC", "Dphi vs Dzed for all C",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzAllC->GetXaxis()->SetTitle("Dzed");
+  hDphiDzAllC->GetYaxis()->SetTitle("Dphi");
+  hDphiDzSameC = new TH2F("hDphiDzSameC", "Dphi vs Dzed for Same C",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzSameC->GetXaxis()->SetTitle("Dzed");
+  hDphiDzSameC->GetYaxis()->SetTitle("Dphi");
+  hDphiDzDiffC = new TH2F("hDphiDzDiffC", "Dphi vs Dzed for diff C",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzDiffC->GetXaxis()->SetTitle("Dzed");
+  hDphiDzDiffC->GetYaxis()->SetTitle("Dphi");
+  hDphi = new TH1F("hDphi","Delta phi DC", 50, -1, 1);
+  hDz = new TH1F("hDz","Delta z DC", 50, -10, 10);
+  
+  hDphiDzAllC0 = new TH2F("hDphiDzAllC0", "Dphi vs Dzed for all C, Arm 0",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzAllC0->GetXaxis()->SetTitle("Dzed");
+  hDphiDzAllC0->GetYaxis()->SetTitle("Dphi");
+  hDphiDzSameC0 = new TH2F("hDphiDzSameC0", "Dphi vs Dzed for Same C, Arm 0",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzSameC0->GetXaxis()->SetTitle("Dzed");
+  hDphiDzSameC0->GetYaxis()->SetTitle("Dphi");
+  hDphiDzDiffC0 = new TH2F("hDphiDzDiffC0", "Dphi vs Dzed for diff C, Arm 0",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzDiffC0->GetXaxis()->SetTitle("Dzed");
+  hDphiDzDiffC0->GetYaxis()->SetTitle("Dphi");
+  hDphi0 = new TH1F("hDphi0","Delta phi DC, Arm 0", 50, -1, 1);
+  hDz0 = new TH1F("hDz0","Delta z DC, Arm 0", 50, -1, 1);
+  
+  hDphiDzAllC1 = new TH2F("hDphiDzAllC1", "Dphi vs Dzed for all C, Arm 1",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzAllC1->GetXaxis()->SetTitle("Dzed");
+  hDphiDzAllC1->GetYaxis()->SetTitle("Dphi");
+  hDphiDzSameC1 = new TH2F("hDphiDzSameC1", "Dphi vs Dzed for Same C, Arm 1",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzSameC1->GetXaxis()->SetTitle("Dzed");
+  hDphiDzSameC1->GetYaxis()->SetTitle("Dphi");
+  hDphiDzDiffC1 = new TH2F("hDphiDzDiffC1", "Dphi vs Dzed for diff C, Arm 1",  30, -0.5, 0.5, 50, -0.1, 0.1);
+  hDphiDzDiffC1->GetXaxis()->SetTitle("Dzed");
+  hDphiDzDiffC1->GetYaxis()->SetTitle("Dphi");
+  hDphi1 = new TH1F("hDphi1","Delta phi DC, Arm 1", 50, -1, 1);
+  hDz1 = new TH1F("hDz1","Delta z DC, Arm 1", 50, -1, 1);
+  
+  hTOF_allsect =  new TH1F("hTOF_allsect", "Time of Flights, All Runs", 100, -100.5, 100.5);
+  hTOF_allsect_low =  new TH1F("hTOF_allsect_low", "Time of Flights, Low Runs", 100, -100.5, 100.5);
+  hTOF_allsect_high =  new TH1F("hTOF_allsect_high", "Time of Flights, High Runs", 100, -100.5, 100.5);
+  hTOF_allsect->GetXaxis()->SetTitle("Time of Flight (ns)");
+  hTOF_allsect_low->GetXaxis()->SetTitle("Time of Flight (ns)");
+  hTOF_allsect_high->GetXaxis()->SetTitle("Time of Flight (ns)");
+
+  hTOF_allsect_0 =  new TH1F("hTOF_allsect_0", "Time of Flights, All Runs, Arm 0", 100, -100.5, 100.5);
+  hTOF_allsect_low_0 =  new TH1F("hTOF_allsect_low_0", "Time of Flights, Low Runs, Arm 0", 100, -100.5, 100.5);
+  hTOF_allsect_high_0 =  new TH1F("hTOF_allsect_high_0", "Time of Flights, High Runs, Arm 0", 100, -100.5, 100.5);
+  hTOF_allsect_0->GetXaxis()->SetTitle("Time of Flight (ns)");
+  hTOF_allsect_low_0->GetXaxis()->SetTitle("Time of Flight (ns)");
+  hTOF_allsect_high_0->GetXaxis()->SetTitle("Time of Flight (ns)");
+
+  hTOF_allsect_1 =  new TH1F("hTOF_allsect_1", "Time of Flights, All Runs, Arm 1", 100, -100.5, 100.5);
+  hTOF_allsect_low_1 =  new TH1F("hTOF_allsect_low_1", "Time of Flights, Low Runs, Arm 1", 100, -100.5, 100.5);
+  hTOF_allsect_high_1 =  new TH1F("hTOF_allsect_high_1", "Time of Flights, High Runs, Arm 1", 100, -100.5, 100.5);
+  hTOF_allsect_1->GetXaxis()->SetTitle("Time of Flight (ns)");
+  hTOF_allsect_low_1->GetXaxis()->SetTitle("Time of Flight (ns)");
+  hTOF_allsect_high_1->GetXaxis()->SetTitle("Time of Flight (ns)");
+
+  for(int i = 0; i < 8; i++){
+
+    hTOF[i] =  new TH1F(Form("hTOF%i",i), Form("Time of Flights, All Runs, Armsect: %i", i), 100, -100.5, 100.5);
+    hTOF_good[i] =  new TH1F(Form("hTOF_good%i",i), Form("Time of Flights, Good Runs, Armsect: %i", i), 100, -100.5, 100.5);
+    hTOF_bad[i] =  new TH1F(Form("hTOF_bad%i",i), Form("Time of Flights, Bad Runs, Armsect: %i", i), 100, -100.5, 100.5);
+   
+  }//end i
+ 
+  hEffectiveEvents = new TH1F("hEffectiveEvents", "Effective Number of events (p+p, MB), All runs", 5, -0.5, 5-0.5);
+  hEffectiveEvents_low = new TH1F("hEffectiveEvents_low", "Effective Number of events (p+p, MB), Low Rate runs", 5, -0.5, 5-0.5);
+  hEffectiveEvents_high = new TH1F("hEffectiveEvents_high", "Effective Number of events (p+p, MB), High Rate runs", 5, -0.5, 5-0.5);
+  
+  hVertex = new TH1F("hVertex", "Vertex distribution", 300, -75, 75);
+  hVertex_low = new TH1F("hVertex_low", "Vertex distribution, Low Rate Runs", 300, -35, 35);
+  hVertex_high = new TH1F("hVertex_high", "Vertex distribution, High Rate Runs", 300, -35, 35);
+
+  hEvents = new TH1F("hEvents", "Number of events", 5, 0, 5);
+
+  hPC3dphi = new TH1F("hPC3dphi", "PC3dphi distribution", 1600, -0.1, 0.1);
+  hPC3dz = new TH1F("hPC3dz", "PC3dz distribution", 800, -50, 50);
+
+  hEMCdphi = new TH1F("hEMCdphi", "EMCdphi distribution", 1600, -0.1, 0.1);
+  hEMCdz = new TH1F("hEMCdz", "EMCdz distribution", 800, -50, 50);
+  
+  hTowerE = new TH2F("hTowerE", "Ecore vs Tower-id", NTOWER, 0, NTOWER, 40, 0, 40.0);
+  hClustersTower = new TH1F("hClustersTower", "Hits vs Tower-id", NTOWER, 0, NTOWER);
+  for (int ias = 0; ias < NARMSECT; ias++)
+    {
+      int ny = 0, nz = 0;
+      if (EmcMap::IsPbGl(ias))
+	{
+	  ny = YPOS_PBGL;
+	  nz = ZPOS_PBGL;
+	}
+      else
+	{
+	  ny = YPOS_PBSC;
+	  nz = ZPOS_PBSC;
+	}
+      hSectorHits[ias] = new TH2F(Form("hSecorHits_%i", ias), Form("Sector %i", ias), nz, 0, nz, ny, 0, ny);
+    }
+
+  hCf = new TH1F("hCf", "Charged fraction", 100, -0.02, 1.02);
+  hCf_low = new TH1F("hCf_low", "Charged fraction, Low Rate Runs", 100, -0.02, 1.02);
+  hCf_high = new TH1F("hCf_high", "Charged fraction, High Rate Runs", 100, -0.02, 1.02);
+  hCf->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_low->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_high->GetXaxis()->SetTitle("Charge Fraction");
+  hJets = new TH1F("hJets", "Reco jet pT", NPTBINS, PTBINS);
+  hJets_low = new TH1F("hJets_low", "Reco jet pT, Low Rate Runs", NPTBINS, PTBINS);
+  hJets_high = new TH1F("hJets_high", "Reco jet pT, High Rate Runs", NPTBINS, PTBINS);
+  hJets->GetXaxis()->SetTitle("pT");
+  hJets_low->GetXaxis()->SetTitle("pT");
+  hJets_high->GetXaxis()->SetTitle("pT");
+
+  //jetpT > 14 cut
+  hCf_14 = new TH1F("hCf_14", "Charged fraction, jetpT > 14", 100, -0.02, 1.02);
+  hCf_low_14 = new TH1F("hCf_low_14", "Charged fraction, jetpT > 14, Low Rate Runs", 100, -0.02, 1.02);
+  hCf_high_14 = new TH1F("hCf_high_14", "Charged fraction, jetpT > 14, High Rate Runs", 100, -0.02, 1.02);
+  hCf_14->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_low_14->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_high_14->GetXaxis()->SetTitle("Charge Fraction");
+  //jetpT > 10 cut
+  hCf_10 = new TH1F("hCf_10", "Charged fraction, jetpT > 10", 100, -0.02, 1.02);
+  hCf_low_10 = new TH1F("hCf_low_10", "Charged fraction, jetpT > 10, Low Rate Runs", 100, -0.02, 1.02);
+  hCf_high_10 = new TH1F("hCf_high_10", "Charged fraction, jetpT > 10, High Rate Runs", 100, -0.02, 1.02);
+  hCf_10->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_low_10->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_high_10->GetXaxis()->SetTitle("Charge Fraction");
+  //jetpT > 12 cut
+  hCf_12 = new TH1F("hCf_12", "Charged fraction, jetpT > 12", 100, -0.02, 1.02);
+  hCf_low_12 = new TH1F("hCf_low_12", "Charged fraction, jetpT > 12, Low Rate Runs", 100, -0.02, 1.02);
+  hCf_high_12 = new TH1F("hCf_high_12", "Charged fraction, jetpT > 12, High Rate Runs", 100, -0.02, 1.02);
+  hCf_12->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_low_12->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_high_12->GetXaxis()->SetTitle("Charge Fraction");
+
+  ///////arm 0
+  hCf_0 = new TH1F("hCf_0", "Charged fraction, Arm 0", 100, -0.02, 1.02);
+  hCf_low_0 = new TH1F("hCf_low_0", "Charged fraction, Arm 0, Low Rate Runs", 100, -0.02, 1.02);
+  hCf_high_0 = new TH1F("hCf_high_0", "Charged fraction, Arm 0 High Rate Runs", 100, -0.02, 1.02);
+  hCf_0->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_low_0->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_high_0->GetXaxis()->SetTitle("Charge Fraction");
+
+  hJets_0 = new TH1F("hJets_0", "Reco jet pT, Arm 0", NPTBINS, PTBINS);
+  hJets_low_0 = new TH1F("hJets_low_0", "Reco jet pT, Arm 0, Low Rate Runs", NPTBINS, PTBINS);
+  hJets_high_0 = new TH1F("hJets_high_0", "Reco jet pT, Arm 0, High Rate Runs", NPTBINS, PTBINS);
+  hJets_0->GetXaxis()->SetTitle("pT");
+  hJets_low_0->GetXaxis()->SetTitle("pT");
+  hJets_high_0->GetXaxis()->SetTitle("pT");
+
+  //arm 1
+  hCf_1 = new TH1F("hCf_1", "Charged fraction, Arm 1", 100, -0.02, 1.02);
+  hCf_low_1 = new TH1F("hCf_low_1", "Charged fraction, Arm 1, Low Rate Runs", 100, -0.02, 1.02);
+  hCf_high_1 = new TH1F("hCf_high_1", "Charged fraction, Arm 1 High Rate Runs", 100, -0.02, 1.02);
+  hCf_1->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_low_1->GetXaxis()->SetTitle("Charge Fraction");
+  hCf_high_1->GetXaxis()->SetTitle("Charge Fraction");
+
+  hJets_1 = new TH1F("hJets_1", "Reco jet pT, Arm 1", NPTBINS, PTBINS);
+  hJets_low_1 = new TH1F("hJets_low_1", "Reco jet pT, Arm 1, Low Rate Runs", NPTBINS, PTBINS);
+  hJets_high_1 = new TH1F("hJets_high_1", "Reco jet pT, Arm 1, High Rate Runs", NPTBINS, PTBINS);
+  hJets_1->GetXaxis()->SetTitle("pT");
+  hJets_low_1->GetXaxis()->SetTitle("pT");
+  hJets_high_1->GetXaxis()->SetTitle("pT");
+
+  hERTscdwnVsRun = new TH2F("hERTscdwnVsRun", "ERT_4x4b scaledown vs Run", RUN_BIN, IRUN_NUM-0.5, FRUN_NUM-0.5, 50, -25.0-0.5, 25.0-0.5);
+  hMuVsRun = new TH2F("hMuVsRun", "Mu (mean number of collisions per event) vs Run", RUN_BIN, IRUN_NUM-0.5, FRUN_NUM-0.5, 50, 0, 5.0);
+  hEffectiveEventsVsRun = new TH2F("hEffectiveEventsVsRun", "EffectiveEvents vs Run", RUN_BIN, IRUN_NUM-0.5, FRUN_NUM-0.5, 100, 50000, 10000000);
+
+  return;
+
+}//end initHistos()
+
+void Run13Jet::InitTrees(bool writeTrees)
+{
+  if(writeTrees)
+    {
+      tJets = new TTree("tJets", "Anti-kt reconstructed jets");
+      tJets->Branch("tJets", &jets_list);
+    }
+
+  return;
+}
+
+void Run13Jet::FillTrees(bool writeTrees)
+{
+  if(writeTrees)
+    {
+      tJets->Fill();
+    }
+
+  return;
+}
+
+void Run13Jet::setMB(bool what = true)
+{
+  if(what)
+    {
+      cout << "Running over MB data" << endl << endl;
+      
+    }
+  else
+    {
+      cout << "Running over ERT data" << endl << endl;
+      cout << "Looking for ERT 4x4c: ERT_4x4b, bit mask: " << ERT_BIT_MASK_B << endl << endl;
+    }
+
+  isMB = what;
+  cout << "***********************************************************************" << endl;
+  cout << "***********************************************************************" << endl << endl;
+
+  return; 
+}
+
+void Run13Jet::setData(bool data = true)
+{
+  if(data)
+    {
+      cout << "Running over Data" << endl << endl;
+      
+    }
+  else
+    { 
+      cout << "Running over Simulation" << endl << endl;
+    }
+
+  isData = data;
+ 
+  return; 
+}
+
+void Run13Jet::GetParticles(PHCompositeNode *topNode, std::vector<tracks>& charged_particle_list, std::vector<clusters>& neutral_particle_list, float vertex,
+			    float t0, bool isData){
+
+  // CHARGED TRACKS
+  PHCentralTrack *phcentral = getClass<PHCentralTrack>(topNode, "PHCentralTrack");
+  if (!phcentral)
+    {
+      cout << "No PHCentral!  No sense continuing" << endl;
+      exit(1);
+    }
+  int numTracks = phcentral->get_npart();
+
+  float mom[numTracks];  
+  float theta[numTracks]; 
+  float pT[numTracks];
+  float eta[numTracks]; 
+  float phi[numTracks];  
+  float phiDC[numTracks]; 
+  float zedDC[numTracks]; 
+  float alpha[numTracks]; 
+  float energy[numTracks]; 
+ 
+  int charge[numTracks];   
+  int quality[numTracks];  
+  int n0[numTracks];    
+  int arm[numTracks];   
+  int sector[numTracks]; 
+  int emcid[numTracks];  
+  
+  float pc3dphi[numTracks]; 
+  float pc3sdphi[numTracks]; 
+  float pc3dz[numTracks];    
+  float pc3sdz[numTracks];   
+  float emcdphi[numTracks];  
+  float emcsdphi[numTracks]; 
+  float emcdz[numTracks];    
+  float emcsdz[numTracks];   
+  
+  float beta[numTracks];     
+  
+  float px[numTracks]; 
+  float py[numTracks]; 
+  float pz[numTracks]; 
+  float eT[numTracks]; 
+  
+  bool passFirst[numTracks];
+  bool passGhost[numTracks];
+  fill(passGhost, passGhost + numTracks / sizeof(bool), true);
+  bool passDcConversion[numTracks];
+  fill(passDcConversion, passDcConversion + numTracks / sizeof(bool), true);
+  //initialize variables
+  for(int i = 0; i < numTracks; i++){
+
+    mom[i] = -999;  
+    theta[i] = -999; 
+    pT[i] = -999;
+    eta[i] = -999; 
+    phi[i] = -999;  
+    phiDC[i] = -999; 
+    zedDC[i] = -999; 
+    alpha[i] = -999; 
+    energy[i] = -999; 
+    
+    charge[i] = -999;   
+    quality[i] = -999;  
+    n0[i] = -999;    
+    arm[i] = -999;   
+    sector[i] = -999; 
+    emcid[i] = -999;  
+    
+    pc3dphi[i] = -999; 
+    pc3sdphi[i] = -999; 
+    pc3dz[i] = -999;    
+    pc3sdz[i] = -999;   
+    emcdphi[i] = -999;  
+    emcsdphi[i] = -999; 
+    emcdz[i] = -999;    
+    emcsdz[i] = -999;   
+    
+    beta[i] = -999;     
+    
+    px[i] = -999; 
+    py[i] = -999; 
+    pz[i] = -999; 
+    eT[i] = -999; 
+
+    passFirst[i] = false;
+
+  }//end i
+  
+  for (unsigned int i = 0; i < phcentral->get_npart(); i++)
+    {
+       mom[i]           = phcentral->get_mom(i); // Magnitude of the momentum.
+       theta[i]         = phcentral->get_the0(i); //The track's theta direction at the vertex
+       pT[i]            = mom[i] * sin(theta[i]);
+       eta[i]           = (float)(-log(tan(0.5 * theta[i])));
+       phi[i]           = phcentral->get_phi0(i); // The track's phi direction at the vertex
+       phiDC[i]         = phcentral->get_phi(i); // The phi coordinate at which the track crosses the drift chamber reference radius
+       zedDC[i]         = phcentral->get_zed(i); //The Z coordinate at which the track crosses PC1
+       alpha[i]         = phcentral->get_alpha(i); // This is the inclination of the track w.r.t. an infinite momentum track
+       energy[i]        = phcentral->get_ecore(i); // EMC "shower core" energy
+
+       charge[i]          = phcentral->get_charge(i);
+       quality[i]         = phcentral->get_quality(i); // Quality of the Drift Chamber Tracks
+       n0[i]              = phcentral->get_n0(i); //The number of phototubes that fired in the normally sized ring area
+       arm[i]             = phcentral->get_dcarm(i); //Arm containing the track (East=0, West=1)
+       sector[i]          = phcentral->get_sect(i); //EMC sector of the associated cluster
+       emcid[i]           = phcentral->get_emcid(i); // Index of the emc cluster used
+
+       pc3dphi[i]       = phcentral->get_pc3dphi(i);
+       pc3sdphi[i]      = phcentral->get_pc3sdphi(i);
+       pc3dz[i]         = phcentral->get_pc3dz(i);
+       pc3sdz[i]        = phcentral->get_pc3sdz(i);
+       emcdphi[i]       = phcentral->get_emcdphi(i);
+       emcsdphi[i]      = phcentral->get_emcsdphi(i);
+       emcdz[i]         = phcentral->get_emcdz(i);
+       emcsdz[i]        = phcentral->get_emcsdz(i);
+
+       beta[i]          = phcentral->get_beta(i);
+
+       px[i] = pT[i] * cos(phi[i]);
+       py[i] = pT[i] * sin(phi[i]);
+       pz[i] = mom[i] * cos(theta[i]);
+       eT[i] = energy[i] * sin(theta[i]);
+
+      int armsect = -99;
+      if (arm[i] == 1)
+	{
+	  armsect = sector[i];
+	}
+      else
+	{
+	  armsect = 4 + sector[i];
+	}
+
+      if(armsect < 0) continue;//sanity check armsect = {0...7}
+
+      float board = -9999.99;
+      board = TrackQualityPP::getBoard(phiDC[i], arm[i]);
+
+      //Track selection
+      bool passPt = (pT[i] > TRACK_MIN_PT_CUT);
+      bool passZedDC = fabs(zedDC[i]) < 75.0;
+      // bool passQuality = (quality == 63) || (quality == 31);
+      bool passQuality = TrackQualityPP::passQualityMask(quality[i], phiDC[i], alpha[i], zedDC[i], arm[i]);
+
+      bool minRequirement = passPt && passZedDC && passQuality;
+      if(!minRequirement) continue;
+      
+      hPC3dphi->Fill(pc3dphi[i]);
+      hPC3dz->Fill(pc3dz[i]);
+
+      hEMCdphi->Fill(emcdphi[i]);
+      hEMCdz->Fill(emcdz[i]);
+
+      //for quality mask
+      bool x1Used = ((quality[i] & X1_USED) == X1_USED);
+      bool x2Used = ((quality[i] & X2_USED) == X2_USED);
+      bool uvUsed = ((quality[i] & UV_FOUND_UNIQUE) == UV_FOUND_UNIQUE);
+
+      int ized = -999;
+      if(zedDC[i] > -75 && zedDC[i] <= -60){
+	ized = 0;
+      }
+      else if(zedDC[i] > -60 && zedDC[i] <= -45){
+	ized = 1;
+      }
+      else if(zedDC[i] > -45 && zedDC[i] <= -30){
+	ized = 2;
+      }
+      else if(zedDC[i] > -30 && zedDC[i] <= -15){
+	ized = 3;
+      }
+      else if(zedDC[i] > -15 && zedDC[i] <= 0){
+	ized = 4;
+      }
+      else if(zedDC[i] > 0 && zedDC[i] <= 15){
+	ized = 5;
+      }
+      else if(zedDC[i] > 15 && zedDC[i] <= 30){
+	ized = 6;
+      }
+      else if(zedDC[i] > 30 && zedDC[i] <= 45){
+	ized = 7;
+      }
+      else if(zedDC[i] > 45 && zedDC[i] <= 60){
+	ized = 8;
+      }
+      else if(zedDC[i] > 60 && zedDC[i] <= 75){
+	ized = 9;
+      }
+    
+      int icent = 0;//don't have to worry about centrality
+
+      if(ized == -999) continue;
+      // *********  Calculate pc3 dphi and dz  ***************
+      
+      float pc3dphi_initial = CalcPC3(pT[i], charge[i], arm[i], ized, icent, pc3dphi[i], INITIAL, DPHI);
+      float pc3dphi_intermediate = CalcPC3(pT[i], charge[i], arm[i], ized, icent, pc3dphi_initial, INTERMEDIATE, DPHI);
+      pc3sdphi[i] = pc3dphi_intermediate;//save to ntuple
+
+      float pc3dz_initial = CalcPC3(pT[i], charge[i], arm[i], ized, icent, pc3dz[i], INITIAL, DZ);
+      float pc3dz_intermediate = CalcPC3(pT[i], charge[i], arm[i], ized, icent, pc3dz_initial, INTERMEDIATE, DZ);
+      pc3sdz[i] = pc3dz_intermediate;//save to ntuple
+      
+      //******** Calculate EMC dphi and dz *************
+      float emcdphi_initial = CalcEMC(pT[i], charge[i], armsect, ized, icent, emcdphi[i], INITIAL, DPHI);
+      float emcdphi_intermediate =  CalcEMC(pT[i], charge[i], armsect, ized, icent, emcdphi_initial, INTERMEDIATE, DPHI);
+      emcsdphi[i] = emcdphi_intermediate;//save to ntuple
+      
+      float emcdz_initial = CalcEMC(pT[i], charge[i], armsect, ized, icent, emcdz[i], INITIAL, DZ);
+      float emcdz_intermediate = CalcEMC(pT[i], charge[i], armsect, ized, icent, emcdz_initial, INTERMEDIATE, DZ);
+      emcsdz[i] = emcdz_intermediate;//save to ntuple
+
+      bool pc3Matching = sqrt((pc3sdphi[i]*pc3sdphi[i]) + (pc3sdz[i]*pc3sdz[i])) < 3.0;//pc3Matching cut
+      bool emcMatching =  sqrt((emcsdphi[i]*emcsdphi[i]) + (emcsdz[i]*emcsdz[i])) < 3.0;//emcMatching cut
+      bool passMatching = pc3Matching || emcMatching;
+      
+      if(!passMatching) continue;//matching cut
+      bool passDC = passPt && passQuality && passZedDC && armsect>=0 && armsect<=7;
+      passFirst[i] = passPt && passQuality && passMatching && passZedDC;
+      
+      for (unsigned int j = 0; j < i; j++){
+
+	if(!passFirst[i] || !passFirst[j]) continue;
+	if(arm[i] != arm[j]) continue;
+
+	float dPhi = phiDC[i] - phiDC[j];
+	float dZed = zedDC[i] - zedDC[j];
+
+	//Ghost cut: Ghost pairs have same charge
+	if ((charge[i] == charge[j]) && fabs(dPhi) < 0.024 && fabs(dZed) < 0.105){
+
+	  float asymmetry = fabs(pT[i] - pT[j]) / (pT[i] + pT[j]);
+
+	  //If assymetry in pT is <0.3 reject only one track- else reject both
+	  if (asymmetry < 0.3){
+		
+	    passGhost[j] = false;
+	  }
+	  else{
+	    
+	    passGhost[i] = false;
+	    passGhost[j] = false;
+	  }
+		
+	}//endif(ghost cut)
+
+	//Converion in DC/PC1: Conversion pairs have different charge
+	if (charge[i] != charge[j] && fabs(dPhi) < 0.07 && fabs(dZed) < 0.105){
+	  
+	  passDcConversion[i] = false;
+	  passDcConversion[j] = false;
+
+	}//endif (conversion cut)
+
+	hDphiDzAllC->Fill(dPhi, dZed);
+	if(arm[i]==0){
+	  
+	  hDphiDzAllC0->Fill(dPhi, dZed); 
+	  hDphi0->Fill(dPhi);
+	  hDz0->Fill(dZed);
+	  
+	}//endif(arm 0)
+	if(arm[i]==1){
+	  
+	  hDphiDzAllC1->Fill(dPhi, dZed); 
+	  hDphi1->Fill(dPhi);
+	  hDz1->Fill(dZed);
+	  
+	}//endif(arm 1)
+	hDphi->Fill(dPhi);
+	hDz->Fill(dZed);
+	
+	if(charge[i] == charge[j]){
+	  
+	  hDphiDzSameC->Fill(dPhi, dZed);
+	  
+	  if(arm[i]==0){
+	    
+	    hDphiDzSameC0->Fill(dPhi, dZed); 
+	    
+	  }//endif(arm 0)
+	  
+	  if(arm[i]==1){
+	    
+	    hDphiDzSameC1->Fill(dPhi, dZed);
+	    
+	  }//endif(arm 1)
+	  
+	}//endif(same charge)
+	else{
+	  
+	  hDphiDzDiffC->Fill(dPhi, dZed);
+	  if(arm[i]==0) hDphiDzDiffC0->Fill(dPhi, dZed); 
+	  if(arm[i]==1) hDphiDzDiffC1->Fill(dPhi, dZed);
+	  
+	}//else(diff charge)
+	
+      }//end j
+
+      if(!passGhost[i]) continue;
+      if(!passDcConversion[i]) continue;
+      
+
+      bool passDcPcGhosts = passGhost[i];
+      if(passDcPcGhosts){
+	nPassDcPcGhost++;
+      }
+      //Track should not be from conversion in DC/PC1
+      bool passDcPcConversions = passDcConversion[i];
+      if (passDcPcConversions)
+	{
+	  nPassDcPcConversion++;
+	}
+
+      bool passPair = passDcPcGhosts && passDcPcConversions;
+      if (passPair)
+	{
+	  nPassPairCut++;
+	}
+
+      //Conversion cuts
+      bool conversionEdge = inEdge(phi[i]);
+      if(!conversionEdge)
+	{
+	  nPassConversionEdge++;
+	}
+
+      bool conversionElectron = (pT[i] < 4.5) && (n0[i] >= 2) && ( (energy[i] / mom[i]) < 0.6);
+      if(!conversionElectron)
+	{
+	  nPassConversionElectron++;
+	}
+
+      bool conversionEcore = emcMatching && energy[i] < 0.2;
+      if(!conversionEcore)
+	{
+	  nPassConversionEcore++;
+	}
+
+      bool passConversions = !conversionEdge && !conversionElectron && !conversionEcore;
+      if (passConversions)
+	{
+	  nPassConversion++;
+	}
+
+      bool passEverything = passPair && passConversions;
+
+      if (!passEverything)
+	{
+	  continue;
+	}
+
+
+      tracks temp;
+      temp.mom            = mom[i];
+      temp.theta          = theta[i];
+      temp.pT             = pT[i];
+      temp.eta            = eta[i];
+      temp.phi            = phi[i];
+      temp.phiDC          = phiDC[i];
+      temp.zedDC          = zedDC[i];
+      temp.alpha          = alpha[i];
+      temp.energy         = energy[i];
+      temp.board          = board;
+
+      temp.charge         = charge[i];
+      temp.quality        = quality[i];
+      temp.n0             = n0[i];
+      temp.arm            = arm[i];
+      temp.armsect        = armsect;
+      temp.emcid          = emcid[i];
+
+      temp.px             = px[i];
+      temp.py             = py[i];
+      temp.pz             = pz[i];
+      temp.eT             = eT[i];
+
+      temp.pc3dphi        = pc3dphi[i];
+      temp.pc3dz          = pc3dz[i];
+      temp.pc3sdphi       = pc3sdphi[i];
+      temp.pc3sdz         = pc3sdz[i];
+      temp.emcdphi        = emcdphi[i];
+      temp.emcdz          = emcdz[i];
+      temp.emcsdphi       = emcsdphi[i];
+      temp.emcsdz         = emcsdz[i];
+
+      temp.x1Used         = x1Used;
+      temp.x2Used         = x2Used;
+      temp.uvUsed         = uvUsed;
+
+      temp.runnumber      = runNumber;
+      temp.eventnumber    = eventNumber;
+
+      temp.passDC         = passDC; 
+      temp.passQuality    = passQuality;
+      temp.passMatching   = passMatching;
+      temp.passFirst      = passFirst[i];
+
+      charged_particle_list.push_back(temp);
+
+    }//end i(loop over all tracks)
+
+
+
+  //neutral 
+  //The number of towers is 48(y) x 96(z) x 2(PbGl) + 36(y) x 72(z) x 6(PbSc) = 9216+15552 = 24768.
+  //Tower ID is a unique ID of all towers in eight sectors (0~24767).
+
+  float bbc_t0 = t0;
+  
+  emcClusterContainer *emcclustercontainer = getClass<emcClusterContainer>(topNode, "emcClusterContainer");
+  if (!emcclustercontainer)
+    {
+      cout << "No emcClusterContainer!  No sense continuing" << endl;
+      exit(1);
+    }
+
+  //For ERT trigger
+  if(isData){
+   
+    ertOut = getClass<ErtOut>(topNode, "ErtOut");
+    if (!ertOut)
+      {
+	cout << "No ertOut!  No sense continuing" << endl;
+	exit(1);
+      }
+  }//endif isData
+
+  int Nclus = emcclustercontainer->size();
+  for (int iclus = 0; iclus < Nclus; iclus++)
+    {
+      clus = emcclustercontainer->getCluster(iclus);
+      int arm         = clus->arm(); //In EMCal convention, West Arm is 0 and East Arm is 1, and thus armsector 0...7 are W0...W3 E0...E3
+      int sector      = clus->sector();
+      int emcid       = clus->id();
+      float energy    = clus->ecore();
+      float prob      = clus->prob_photon();
+      float chi2      = clus->chi2();
+
+      //need to construct cluster theta and pT
+      float x         = clus->x();
+      float y         = clus->y();
+      float z         = clus->z() - vertex;
+      float theta     = clus->theta();//acos(z / sqrt(x * x + y * y + z * z));
+      int yTowerPos   = clus->iypos();
+      int zTowerPos   = clus->izpos();
+      int armsect     = (arm * 4) + sector; //Arm for emcal is different
+      float tof_corr  = TofCorrection(armsect, yTowerPos, zTowerPos);
+      float tof       = clus->tof() - tof_corr - bbc_t0;//TOF of the central tower, minus the flash time (=sqrt(x2+y2+z2)/30.0)) Unit ns.
+
+      TVector3 v3;
+      TLorentzVector v4;
+      v3.SetXYZ(x, y, z);
+      v3 = energy * v3.Unit();
+      v4.SetT(energy);
+      v4.SetVect(v3);
+
+      float pT        = v4.Pt();
+      if(pT == 0) continue;//protect against eta crash
+      float phi       = phiReduce(v4.Phi());
+      float px        = v4.Px();
+      float py        = v4.Py();
+      float pz        = v4.Pz();
+      float eta       = v4.Eta();
+      float eT        = v4.Et();
+
+      int towerId         = EmcMap::GetTowerID(armsect, yTowerPos, zTowerPos);
+      bool passIsValid    = EmcMap::IsValidYZ(armsect, yTowerPos, zTowerPos);
+      bool passNotBad     = !EmcMap::IsBad(armsect, yTowerPos, zTowerPos);
+
+      //ERT information; ertBit: 0=4x4a, 1=4x4b, 2=4x4c
+      int ertSM = (arm == 1 && sector < 2)  ?  (yTowerPos / 12) * 8 + zTowerPos / 12  :  (yTowerPos / 12) * 6 + zTowerPos / 12;
+
+      int ert4x4A = 0;
+      int ert4x4B = 0;
+      int ert4x4C = 0;
+      if(isData){
+	ert4x4A = ertOut->get_ERTbit(0, arm, sector, ertSM);
+	ert4x4B = ertOut->get_ERTbit(1, arm, sector, ertSM);
+	ert4x4C = ertOut->get_ERTbit(2, arm, sector, ertSM);
+      }
+      //bool ertFired = ert4x4A || ert4x4B || ert4x4C;
+      bool ertFired = ert4x4B;
+
+      //Cluster selection
+      bool passEnergy = energy > CLUSTER_MIN_ENERGY_CUT;
+      bool passEverything = passIsValid && passNotBad && passEnergy;
+
+      if(!passEverything)
+	{
+	  continue;
+	}
+
+      //Additional hot towers- temp soln
+      if(towerId == 628 || towerId == 2346 || towerId == 2418 ||
+
+	 towerId == 2764 || towerId == 2839 ||
+
+	 towerId == 5361 || towerId == 5512 || towerId == 5797 || towerId == 5800 ||
+	 towerId == 5855 || towerId == 5870 || towerId == 5935 || towerId == 5948 ||
+	 towerId == 6019 || towerId == 7038 ||
+
+	 towerId == 8749 || towerId == 8823 || towerId == 8826 || towerId == 9549 ||
+	 towerId == 9762 || towerId == 9891 ||
+	 towerId == 8820 || towerId == 8821 || towerId == 8892 || towerId == 8893 ||
+	 towerId == 8966 || towerId == 8967 || towerId == 9600 || towerId == 9601 ||
+
+	 towerId == 11958 || towerId == 11959 || towerId == 11960 || towerId == 12030 ||
+	 towerId == 12031 || towerId == 12102 || towerId == 12103 || towerId == 12104 ||
+	 towerId == 12105 || towerId == 12174 || towerId == 12175 || towerId == 12176 ||
+	 towerId == 12177 ||
+
+	 towerId == 13660 || towerId == 13661 || towerId == 13662 || towerId == 13664 ||
+	 towerId == 13728 || towerId == 13729 || towerId == 13734 || towerId == 13735 ||
+	 towerId == 13736 || towerId == 14033 || towerId == 14081 || towerId == 14105 ||
+	 towerId == 14152 || towerId == 14176 || towerId == 14177 || towerId == 14224 ||
+	 towerId == 14225 || towerId == 14249 || towerId == 14296 || towerId == 14368 ||
+	 towerId == 14377 || towerId == 14513 || towerId == 14585 || towerId == 14605 ||
+	 towerId == 13094 || towerId == 13095 || towerId == 13166 || towerId == 13167 ||
+	 towerId == 13239 || towerId == 13240 ||
+
+	 towerId == 16558 || towerId == 16840 || towerId == 16935 || towerId == 16936 ||
+	 towerId == 17517 || towerId == 17724 || towerId == 17796 || towerId == 18258 ||
+	 towerId == 18414 || towerId == 18784 || towerId == 19292 || towerId == 19333 ||
+	 towerId == 18688 || towerId == 18785 || towerId == 18880 || towerId == 18891 ||
+
+	 towerId == 21625 || towerId == 21692 || towerId == 22146 || towerId == 22607 ||
+	 towerId == 22726 || towerId == 23046 || towerId == 23958 || towerId == 23964 ||
+	 towerId == 24269 || towerId == 24539 || towerId == 24656 || towerId == 23045 ||
+	 towerId == 21691 || towerId == 23047 || towerId == 22725 || towerId == 22727)
+	{
+
+	  continue;
+	}
+
+      hTowerE->Fill(towerId, energy);
+      hClustersTower->Fill(towerId);
+      hSectorHits[armsect]->Fill(zTowerPos, yTowerPos);
+
+      //Convert EMC arm to DC convention
+      if(arm == 0)
+	{
+	  arm = 1;
+	}
+      else
+	{
+	  arm = 0;
+	}
+
+      //Don't double count
+      bool charged = false;
+      for (unsigned int t = 0; t < charged_particle_list.size(); t++){
+	
+	if(!charged_particle_list[t].passDC)
+	  {
+	    continue;
+	  }
+	float emcsdphi = charged_particle_list[t].emcsdphi;
+	float emcsdz   = charged_particle_list[t].emcsdz;
+	
+	bool emcMatching = sqrt((emcsdphi * emcsdphi) + (emcsdz * emcsdz)) < 3.0;
+
+	if ((emcid == charged_particle_list[t].emcid) && emcMatching)
+	  {
+	    charged = true;
+	  }
+      }//end t
+      
+      if(!charged){
+	
+	hTOF_allsect->Fill(tof);
+	if(arm==0){
+	  hTOF_allsect_0->Fill(tof);
+	}
+	if(arm==1){
+	  hTOF_allsect_1->Fill(tof);
+	}
+	hTOF[armsect]->Fill(tof);
+	if(isLowRate){
+	  
+	  hTOF_allsect_low->Fill(tof);
+	  hTOF_good[armsect]->Fill(tof);
+	  if(arm == 0) hTOF_allsect_low_0->Fill(tof);
+	  else hTOF_allsect_low_1->Fill(tof);
+
+	}//endif lowRate
+	else{
+	  
+	  hTOF_allsect_high->Fill(tof); 
+	  hTOF_bad[armsect]->Fill(tof);
+	  if(arm == 0) hTOF_allsect_high_0->Fill(tof);
+	  else hTOF_allsect_high_1->Fill(tof);
+
+	}//else highRate
+	
+	clusters temp;
+	temp.arm             = arm;
+	temp.sector          = sector;
+	temp.armsect         = armsect;
+	temp.emcid           = emcid;
+	temp.yTowerPos       = yTowerPos;
+	temp.zTowerPos       = zTowerPos;
+	temp.towerId         = towerId;
+	
+	temp.ertFired        = ertFired;
+	
+	temp.energy          = energy;
+	temp.theta           = theta;
+	temp.pT              = pT;
+	temp.eT              = eT;
+	temp.phi             = phi;
+	temp.px              = px;
+	temp.py              = py;
+	temp.pz              = pz;
+	temp.eta             = eta;
+	temp.chi2            = chi2;
+	temp.prob            = prob;
+	temp.runnumber       = runNumber;
+	temp.eventnumber     = eventNumber;
+	temp.tof             = tof;
+	
+	temp.passIsValid = passIsValid;
+	temp.passNotBad = passNotBad;
+	temp.passEnergy = passEnergy;
+	temp.passEverything = passEverything;
+	
+	neutral_particle_list.push_back(temp);
+      }//endif(!charged)
+    }//end iclus
+
+}//end getparticles

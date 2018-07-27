@@ -1,0 +1,13 @@
+AC_INIT(configure.in)
+
+AM_INIT_AUTOMAKE(EMCalMapPP510, 1.00)
+
+AC_PROG_CXX(CC g++)
+AC_ENABLE_STATIC(no)
+AC_PROG_LIBTOOL
+
+if test $ac_cv_prog_gxx = yes; then
+   CXXFLAGS="$CXXFLAGS -Wall"
+fi
+
+AC_OUTPUT(Makefile)

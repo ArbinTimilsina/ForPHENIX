@@ -1,0 +1,15 @@
+Universe                = vanilla
+Notification            = Error
+Initialdir              = $ENV(PWD)
+Executable              = $ENV(PWD)/JetAnalyzerSim.cmd
+Log                     = $ENV(PWD)/JetAnalyzerSim_output.log
+Output                  = $ENV(PWD)/JetAnalyzerSim_output.out
+Error                   = $ENV(PWD)/JetAnalyzerSim_output.err
+PeriodicHold            = (NumJobStarts>=1 && JobStatus == 1)
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+transfer_output_files   = JetAnalyzerSim.root
+Notify_user             = arbint@iastate.edu
+GetEnv                  = False
++Job_Type               = "cas"
+Queue

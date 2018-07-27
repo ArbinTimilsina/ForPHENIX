@@ -1,0 +1,822 @@
+#ifndef __JETANALYZER_H__
+#define __JETANALYZER_H__
+
+//Data classes I am using in analysis
+#include <SubsysReco.h>
+#include <PHCentralTrack.h>
+#include <PHGlobal.h>
+#include <EventHeader.h>
+#include <PreviousEvent.h>
+#include <emcClusterContainer.h>
+#include <emcClusterContent.h>
+
+//Cpp tools
+#include <iomanip>
+
+//Root tools
+#include <TMath.h>
+#include <TFile.h>
+#include <TTree.h>
+#include <TH1.h>
+#include <TH2.h>
+#include <TCut.h>
+#include <TVector3.h>
+#include <TLorentzVector.h>
+
+//For Trigger
+#include <TrigLvl1.h>
+#include <ErtOut.h>
+#include <TriggerHelper.h>
+
+//Used for EMCal warnmap
+#include "EmcMap.h"
+
+class PHCompositeNode;
+
+#define VERTEX_CUT 10
+#define TRACK_MIN_PT_CUT 0.5
+#define CLUSTER_MIN_ENERGY_CUT 0.5
+
+#define IRUN_NUMBER 357500.5
+#define FRUN_NUMBER 377400.5
+#define RUN_BIN 19900
+
+//pT bins
+const int NPTBINS = 25;
+const float PTBINS[NPTBINS + 1] =
+    {
+	5.0000, 5.4824, 6.0113, 6.5913, 7.2272, 7.9245, 8.6890, 9.5273, 10.4465, 11.4543, 12.5594, 13.7711,
+	15.0998, 16.5566, 18.1539, 19.9054, 21.8258, 23.9315, 26.2404, 28.7720, 31.5479, 34.5915, 37.9289,
+	41.5882, 45.6005, 50.0000
+    };
+
+const int NPTBINS_RECO = 11;
+const float PTBINS_RECO[NPTBINS_RECO + 1] =
+    {
+	10.4465, 12.0634, 13.9306, 16.0868, 18.5768, 21.4521, 24.7726, 28.6069, 33.0347, 38.1479, 44.0525, 50.8711
+    };
+
+const int NPTBINS_TRUE = 11;
+const float PTBINS_TRUE[NPTBINS_TRUE + 1] =
+    {
+	6.5913, 7.9245, 9.5273, 11.4544, 13.7712, 16.5566, 19.9054, 23.9316, 28.7721, 34.5916, 41.5883, 50.0001
+    };
+
+const int NPTBINS_RECO_R3 = 20;
+const float PTBINS_RECO_R3[NPTBINS_RECO_R3 + 1] =
+    {
+	8.0, 8.97615, 10.0714, 11.3003, 12.6791, 14.2262, 15.9621, 17.9098, 20.0951, 22.5471, 25.2982, 28.3851,
+	31.8486, 35.7347, 40.095, 44.9873, 50.4766, 56.6357, 63.5463, 71.3001, 80.0
+    };
+
+const int NPTBINS_TRUE_R3 = 12;
+const float PTBINS_TRUE_R3[NPTBINS_TRUE_R3 + 1] =
+    {
+	6.0, 7.15956, 8.54321, 10.1943, 12.1644, 14.5153, 17.3205, 20.6679, 24.6621, 29.4283, 35.1156, 41.902, 50.0
+    };
+
+//Simulation relies on both these values
+const float MINPT_TRUE = 6.5;
+const float MINPT_RECO = 10.4;
+
+//For momentum
+const float MomfactorWest = 0.9742;
+const float MomfactorEast = 0.9727;
+
+//DC geometry
+const float DC_RADIUS_INNER = 202.0;
+const float DC_RADIUS_CENTER = 224.0;
+const float DC_RADIUS_OUTER = 246.0;
+
+const float DC_PHI_BOTTOM_WEST = -0.589;
+const float DC_PHI_TOP_WEST = 0.982;
+const float DC_PHI_BOTTOM_EAST = 3.731;
+const float DC_PHI_TOP_EAST = 2.160;
+
+namespace fastjet
+{
+    class JetDefinition;
+}
+
+typedef struct
+{
+    float mom;
+    float theta;
+    float pT;
+    float eta;
+    float phi;
+    float phiDC;
+    float zedDC;
+    float alpha;
+    float energy;
+    float board;
+
+    int charge;
+    int quality;
+    int n0;
+    int arm;
+    int armsect;
+    int emcid;
+
+    float px;
+    float py;
+    float pz;
+    float eT;
+
+    float pc3dphi;
+    float pc3dz;
+    float pc3sdphi;
+    float pc3sdz;
+    float emcdphi;
+    float emcdz;
+    float emcsdphi;
+    float emcsdz;
+
+    bool inBrokenX1;
+    bool inBrokenX2;
+    bool inBrokenUV;
+    bool x1Used;
+    bool x2Used;
+    bool uvUsed;
+    bool passDC;
+    bool passQuality;
+    bool passMatching;
+    bool passFirst;
+
+} tracks;
+
+
+typedef struct
+{
+    int arm;
+    int sector;
+    int armsect;
+    int emcid;
+    int yTowerPos;
+    int zTowerPos;
+    int towerId;
+    int ert4x4Bit;
+
+    float energy;
+    float theta;
+    float pT;
+    float eT;
+    float phi;
+    float px;
+    float py;
+    float pz;
+    float eta;
+    float chi2;
+    float prob;
+
+    bool passIsValid;
+    bool passNotHot;
+    bool passNotDead;
+    bool passNotUncalib;
+    bool passNotBad;
+    bool passEnergy;
+    bool passEverything;
+
+} clusters;
+
+typedef struct
+{
+    int arm;
+    int charge;
+
+    float energy;
+    float mom;
+    float pT;
+    float eT;
+    float px;
+    float py;
+    float pz;
+    float eta;
+    float phi;
+    float phiDC;
+
+    bool ertTrigger;
+
+    int id;
+    float jetPt;
+
+} particles;
+
+
+typedef struct
+{
+    int arm;
+    int centralityBin;
+
+    float pT;
+    float eta;
+    float phi;
+    float nc;
+    float cf;
+    float nf;
+    float disc;
+
+} jets;
+
+typedef struct
+{
+    int armsect;
+    float pT;
+    float eta;
+    float phi;
+    bool ertTrigger;
+} photons;
+
+struct sortParticle
+{
+    bool operator()(const particles &particle1, const particles &particle2)
+    {
+        return (fabs(particle1.charge) > fabs(particle2.charge));
+    }
+};
+
+class JetAnalyzer: public SubsysReco
+{
+ public:
+    JetAnalyzer(std::string outfilename);
+    virtual ~JetAnalyzer() {}
+
+    //  For this analysis we only use following:
+    int Init         (PHCompositeNode *topNode);
+    int InitRun      (PHCompositeNode *topNode);
+    int process_event(PHCompositeNode *topNode);
+    int ResetEvent   (PHCompositeNode *topNode);
+    int End          (PHCompositeNode *topNode);
+    int EndRun       (const int runNumber);
+    void MyInit      ();
+    void MyStatistics();
+    void SetData     (bool what);
+    void SetCuAu     (bool what);
+    void SetMB       (bool what);
+
+    void GetTracks   (PHCompositeNode *topNode, std::vector<tracks>& track_list);
+
+    void GetClusters (PHCompositeNode *topNode, std::vector<clusters>& cluster_list, float vertex, bool perfectEMCal = false);
+
+    void GetParticles(std::vector<tracks> track_list,
+                      std::vector<clusters> cluster_list,
+                      std::vector<tracks>& charged_particle_list,
+                      std::vector<clusters>& neutral_particle_list,
+                      std::vector<particles>& particle_list);
+
+    void GetAntiKtCommon(std::vector<particles> particle_list,
+                         float R, float nc, float minPt, float minCf, float maxCf,
+                         std::vector<jets>& antikt_jet_list,
+                         std::vector<particles>& constituent_list,
+                         int fiducialCut = 0);
+
+    void GetAntiKt(std::vector<particles> particle_list,
+                   fastjet::JetDefinition *antikt,
+                   std::vector<jets>& antikt_jet_list,
+                   TH1F *hAntikt[16],
+                   TH1F *hAntiktCentrality[5],
+                   TH1F *hAntiktErtEfficiency[5],
+                   TH1F *hCharged[5],
+                   TH1F *hNeutral[5]);
+
+    void GetFakeJets(std::vector<particles> particle_list,
+                     float R, float nc, float minPt, float minCf, float maxCf,
+                     std::vector<particles>& shuffled_particle_list,
+                     std::vector<jets>& fake_jet_list,
+                     std::vector<particles>& constituent_list,
+                     int fiducialCut = 0);
+
+    void GetPi0(std::vector<clusters> cluster_list,
+                TH1F *hMass[5][8],
+                TH2F *hMassVsPt[5][8],
+                TH1F *hAsymmetry[5][8]);
+
+    void InitTrees(bool writeTrees);
+    void FillTrees(bool writeTrees);
+    void InitHistograms();
+    void FillHistograms();
+
+    float phiReduce(float phi)
+    {
+        if (phi < -TMath::PiOver2())
+            {
+                phi += TMath::TwoPi();
+            }
+        if (phi >= 3.0 * TMath::PiOver2())
+            {
+                phi -= TMath::TwoPi();
+            }
+        return phi;
+    }
+
+    float dR(float eta1, float eta2, float phi1, float phi2)
+    {
+        float deta = eta1 - eta2;
+        float dphi = phi1 - phi2;
+
+        if (dphi < -TMath::Pi())
+            {
+                dphi += 2 * TMath::Pi();
+            }
+        if (dphi > TMath::Pi())
+            {
+                dphi -= 2 * TMath::Pi();
+            }
+        return sqrt(dphi * dphi + deta * deta);
+    }
+
+    float getDiscriminant(float pT, float dR)
+    {
+        return (pT * pT * exp(-dR * dR / (2.0 * 0.1 * 0.1)));
+    }
+
+    float inEdge(float phi0)
+    {
+        return ((phi0 > -0.65 && phi0 < -0.49) ||
+                (phi0 > 0.89 && phi0 < 1.05) ||
+                (phi0 > 2.10 && phi0 < 2.26) ||
+                (phi0 > 3.62 && phi0 < 3.78));
+    }
+
+    int getCentralityBin(float centrality)
+    {
+        int cBin = -1;
+        if(centrality >= 0 && centrality <= 20)
+            {
+                cBin = 1;
+            }
+        if(centrality > 20 && centrality <= 40)
+            {
+                cBin = 2;
+            }
+        if(centrality > 40 && centrality <= 60)
+            {
+                cBin = 3;
+            }
+        if(centrality > 60 && centrality <= 90)
+            {
+                cBin = 4;
+            }
+
+        return cBin;
+    }
+
+    bool passFiducialCut(float jetEta, float jetPhi)
+    {
+        bool satisfyEta = fabs(jetEta) < 0.30;
+        bool satisfyPhi = ((jetPhi > -0.469) && (jetPhi < 0.862)) ||
+	    ((jetPhi > 2.280) && (jetPhi < 3.611));
+
+        return (satisfyEta && satisfyPhi);
+    }
+
+    bool passFiducialCutTight(float jetEta, float jetPhi)
+    {
+        bool satisfyEta = fabs(jetEta) < (0.30 - 0.05);
+        bool satisfyPhi = ((jetPhi > (-0.469 + 0.05)) && (jetPhi < (0.862 - 0.05))) ||
+	    ((jetPhi > (2.280 + 0.05)) && (jetPhi < (3.611 - 0.05)));
+
+        return (satisfyEta && satisfyPhi);
+    }
+
+ protected:
+    const int verbo;
+    const std::string outfname;
+    const bool writeTree;
+    bool isCuAu;
+    bool isMB;
+    bool isData;
+
+    TFile* outfile;
+
+    PHGlobal *phglobal;
+    EventHeader *evtheader;
+    ErtOut *ertOut;
+    TriggerHelper *triggerHelper;
+
+    float zvertex;
+    float centrality;
+    int centralityBin;
+
+    //For general information
+    unsigned int runNumber;
+    unsigned int eventNumber;
+
+    unsigned int nTotalEvents[5];
+    unsigned int nGoodEvents[5];
+    unsigned int nNoJetEvents[5];
+    unsigned int nNoJetEventsEast[5];
+    unsigned int nNoJetEventsWest[5];
+    unsigned int nNoJetEventsFidTight[5];
+    unsigned int nNoJetEventsNc[5];
+    unsigned int nNoJetEventsCf[5];
+    unsigned int nNoJetEventsNcCf[5];
+    unsigned int nNoJetEventsTrClTight[5];
+
+    unsigned int nJets[5];
+    unsigned int nJetsHighPt[5];
+
+    float nEffectiveEvents;
+
+    unsigned int nAllTracks;
+    unsigned int nAllClusters;
+    unsigned int nChargedParticles;
+    unsigned int nNeutralParticles;
+
+    unsigned int nPassPt;
+    unsigned int nPassQuality;
+    unsigned int nPassEMCMatching;
+    unsigned int nPassPC3Matching;
+    unsigned int nPassMatching;
+
+    unsigned int nPassFirst;
+    unsigned int nPassDcPcGhost;
+    unsigned int nPassDcPcConversion;
+    unsigned int nPassPairCut;
+
+    unsigned int nPassConversionEdge;
+    unsigned int nPassConversionElectron;
+    unsigned int nPassConversionEcore;
+    unsigned int nPassConversion;
+
+    unsigned int nPassIsValid;
+    unsigned int nPassNotHot;
+    unsigned int nPassNotDead;
+    unsigned int nPassNotUncalib;
+    unsigned int nPassNotBad;
+    unsigned int nPassEnergy;
+    unsigned int nPassEverything;
+
+    //List of tracks and clusters
+    std::vector<tracks> all_tracks;
+    std::vector<clusters> all_clusters;
+
+    //Ntuple for tracks and clusters
+    TTree *allTracks;
+    TTree *allClusters;
+
+    //Ntuple for particles
+    TTree *allCharged;
+    TTree *allNeutrals;
+    TTree *allparticles;
+
+    //List of particles
+    std::vector<tracks> charged_particles;
+    std::vector<clusters> neutral_particles;
+    std::vector<particles> all_particles;
+
+    //List of anti-kt jets
+    std::vector<jets> antikt_jets_0;
+    std::vector<jets> antikt_jets_1;
+    std::vector<jets> antikt_jets_2;
+    std::vector<jets> antikt_jets_3;
+
+    //Ntuple for ant-kt jets
+    TTree *antikt0;
+    TTree *antikt1;
+    TTree *antikt2;
+    TTree *antikt3;
+
+    //FastJet: Jet definition
+    fastjet::JetDefinition *antikt_00;
+    fastjet::JetDefinition *antikt_01;
+    fastjet::JetDefinition *antikt_02;
+    fastjet::JetDefinition *antikt_03;
+
+    //Histograms
+    //General histos
+    TH1F *hEvents;
+    TH1F *hEffectiveEvents;
+
+    //For Pair Cut
+    TH2F *hAllPairs;
+    TH2F *hSameChargePairs;
+    TH2F *hOppositeChargePairs;
+
+    //For Matching study
+    TH2F *hEmcsdPhi;
+    TH2F *hEmcsdZ;
+
+    TH2F *hPc3sdPhi;
+    TH2F *hPc3sdZ;
+
+    //To make Quality mask
+    TH2F *hMakeMask_NE_X1;
+    TH2F *hMakeMask_SE_X1;
+    TH2F *hMakeMask_NW_X1;
+    TH2F *hMakeMask_SW_X1;
+
+    TH2F *hMakeMask_NE_X2;
+    TH2F *hMakeMask_SE_X2;
+    TH2F *hMakeMask_NW_X2;
+    TH2F *hMakeMask_SW_X2;
+
+    TH2F *hMakeMask_NE_UV;
+    TH2F *hMakeMask_SE_UV;
+    TH2F *hMakeMask_NW_UV;
+    TH2F *hMakeMask_SW_UV;
+
+    //To check Quality mask
+    TH2F *hCheckMask_NE_X1;
+    TH2F *hCheckMask_SE_X1;
+    TH2F *hCheckMask_NW_X1;
+    TH2F *hCheckMask_SW_X1;
+
+    TH2F *hCheckMask_NE_X2;
+    TH2F *hCheckMask_SE_X2;
+    TH2F *hCheckMask_NW_X2;
+    TH2F *hCheckMask_SW_X2;
+
+    TH2F *hCheckMask_NE_UV;
+    TH2F *hCheckMask_SE_UV;
+    TH2F *hCheckMask_NW_UV;
+    TH2F *hCheckMask_SW_UV;
+
+    //To compare
+    TH2F *hRegularQuality_NE;
+    TH2F *hRegularQuality_SE;
+    TH2F *hRegularQuality_NW;
+    TH2F *hRegularQuality_SW;
+
+    TH2F *hModifiedQuality_NE;
+    TH2F *hModifiedQuality_SE;
+    TH2F *hModifiedQuality_NW;
+    TH2F *hModifiedQuality_SW;
+
+    //Tracks
+    TH1F *hTracksZed[5];
+    TH1F *hTracksPhi[5];
+
+    TH1F *hCharged_ecore;
+    TH1F *hCharged_EP1;
+    TH1F *hCharged_EP2;
+
+    //Clusters
+    TH2F* hSectorHits[NARMSECT];
+    TH2F *hTowerE;
+
+    TH1F *hClustersEta[5];
+    TH1F *hClustersPhi[5];
+    TH1F *hClustersTower[5];
+
+    //Jets- 16 cuts: disc(good), disc+eta+phi(jetLevel), cf+nc(pT>5 n pT>15), 8 pT
+    TH1F *hAntikt0[16];
+    TH1F *hAntikt1[16];
+    TH1F *hAntikt2[16];
+    TH1F *hAntikt3[16];
+
+    //Centality
+    TH1F *hAntiktCentrality0[5];
+    TH1F *hAntiktCentrality1[5];
+    TH1F *hAntiktCentrality2[5];
+    TH1F *hAntiktCentrality3[5];
+
+    //ERT efficiency
+    TH1F *hAntiktErtEfficiency0[5];
+    TH1F *hAntiktErtEfficiency1[5];
+    TH1F *hAntiktErtEfficiency2[5];
+    TH1F *hAntiktErtEfficiency3[5];
+
+    //Study the charged and neutral particles inside jet
+    TH1F *hCharged0[5];
+    TH1F *hCharged1[5];
+    TH1F *hCharged2[5];
+    TH1F *hCharged3[5];
+
+    TH1F *hNeutral0[5];
+    TH1F *hNeutral1[5];
+    TH1F *hNeutral2[5];
+    TH1F *hNeutral3[5];
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    //For final results
+    /////////////////////////////////////////////////////////////////////////////////////
+    TTree *tFinalJets;
+    std::vector<jets> final_jets;
+    TH1F *hFinalJets[5];
+    TH2F *hFinalJetsEtaPhi[5];
+
+    TH1F *hFinalJetsDefault[5];
+    TH1F *hFinalJetsEast[5];
+    TH1F *hFinalJetsWest[5];
+    TH1F *hFinalJetsFidTight[5];
+    TH1F *hFinalJetsNc[5];
+    TH1F *hFinalJetsCf[5];
+    TH1F *hFinalJetsNcCf[5];
+    TH1F *hFinalJetsTrClTight[5];
+
+    TH1F *hFakeJetsDefault[5];
+    TH1F *hFakeJetsEast[5];
+    TH1F *hFakeJetsWest[5];
+    TH1F *hFakeJetsFidTight[5];
+    TH1F *hFakeJetsNc[5];
+    TH1F *hFakeJetsCf[5];
+    TH1F *hFakeJetsNcCf[5];
+    TH1F *hFakeJetsTrClTight[5];
+
+    /////////////////////////////////////////////////////////////////////////////////////
+    //Post QM15
+    /////////////////////////////////////////////////////////////////////////////////////
+    //Vertex
+    unsigned int nVertexEvents[5];
+    float nTotalZvertex[5];
+    TH1F *hVertex[5];
+    TH1F *hTotalVertexVsRun[5];
+    TH1F *hVertexEventsVsRun[5];
+
+    //Centrality
+    unsigned int nCentralityEvents;
+    float nTotalCentrality;
+    TH1F *hCentrality;
+    TH1F *hTotalCentralityVsRun;
+    TH1F *hCentralityEventsVsRun;
+
+    float nTotalCentralityAfterVertex;
+    TH1F *hCentralityAfterVertex;
+    TH1F *hTotalCentralityAfterVertexVsRun;
+
+    //Events
+    TH1F *hEffectiveEventsVsRun;
+    TH1F *hTotalEventsVsRun[5];
+    TH1F *hGoodEventsVsRun[5];
+
+    //Jet yield
+    TH1F *hJetYieldVsRun[5];
+    TH1F *hJetYieldHighPtVsRun[5];
+
+    //Energy scale
+    //1. pi0 in EMCal
+    TH1F *hPi0Mass[5][8];
+    TH2F *hPi0MassVsPt[5][8];
+    TH1F *hPi0Asymmetry[5][8];
+
+    //R=0.3
+    TH1F *hR3Jets[5];
+    TH1F *hR3FakeJets[5];
+    unsigned int nNoR3JetEvents[5];
+
+    TH1F *hR3AllJets[5];
+    TH1F *hR3ERTJets[5];
+
+    //UE study
+    TH1F *hBackground[5];
+
+    inline float getNewAlpha(float alpha, float phi, float dcarm)
+    {
+        float xp = sin(phi);
+        float yp = cos(phi);
+
+        if (dcarm == 0)
+            {
+                float XOffsetE = 1.19326e-01;
+                float YOffsetE = 1.30366e-01;
+
+                float AlphaOffsetE = (XOffsetE * xp / 220. + YOffsetE * yp / 220.);
+                return (alpha - AlphaOffsetE);
+            }
+        else if (dcarm == 1)
+            {
+                float XOffsetW = 1.81180e-01;
+                float YOffsetW = 1.48351e-01;
+
+                float AlphaOffsetW = (XOffsetW * xp / 220. + YOffsetW * yp / 220.);
+                return (alpha - AlphaOffsetW);
+            }
+
+        return alpha;
+    }
+
+    inline void makeFinalJets(std::vector<particles> total_particles,
+                              float vNc, float vMinCf, float vMaxCf, int fiducialCut, int cBin,
+                              TH1F *hFinal[5], TH1F *hFake[5], unsigned int nNoJet[5])
+    {
+        std::vector<jets> reco_jets;
+        reco_jets.clear();
+        std::vector<particles> reco_jet_constituents;
+        reco_jet_constituents.clear();
+        GetAntiKtCommon(total_particles, 0.2, vNc, MINPT_RECO, vMinCf, vMaxCf,
+                        reco_jets, reco_jet_constituents,
+                        fiducialCut);
+
+        for (unsigned int f = 0; f < reco_jets.size(); f++)
+            {
+                float pT  = reco_jets[f].pT;
+
+                hFinal[0]->Fill(pT);
+                if(cBin == 1)
+                    {
+                        hFinal[1]->Fill(pT);
+                    }
+                if(cBin == 2)
+                    {
+                        hFinal[2]->Fill(pT);
+                    }
+                if(cBin == 3)
+                    {
+                        hFinal[3]->Fill(pT);
+                    }
+                if(cBin == 4)
+                    {
+                        hFinal[4]->Fill(pT);
+                    }
+            }
+
+        std::vector<particles> shuffled_particles;
+        shuffled_particles.clear();
+        std::vector<jets> fake_jets;
+        fake_jets.clear();
+        std::vector<particles> fake_jets_constituents;
+        fake_jets_constituents.clear();
+        if(reco_jets.size() == 0)
+            {
+                GetFakeJets(total_particles, 0.2, vNc, MINPT_RECO, vMinCf, vMaxCf,
+                            shuffled_particles, fake_jets, fake_jets_constituents,
+                            fiducialCut);
+
+                nNoJet[0]++;
+                if(cBin == 1)
+                    {
+                        nNoJet[1]++;
+                    }
+                if(cBin == 2)
+                    {
+                        nNoJet[2]++;
+                    }
+                if(cBin == 3)
+                    {
+                        nNoJet[3]++;
+                    }
+                if(cBin == 4)
+                    {
+                        nNoJet[4]++;
+                    }
+            }
+
+        for (unsigned int f = 0; f < fake_jets.size(); f++)
+            {
+                bool ertTriggerFired = false;
+                for (unsigned int iconst = 0; iconst < fake_jets_constituents.size(); iconst++)
+                    {
+                        //Incase of two or more jets in an event
+                        if(fake_jets[f].pT == fake_jets_constituents[iconst].jetPt)
+                            {
+                                if(fake_jets_constituents[iconst].ertTrigger == true)
+                                    {
+                                        ertTriggerFired = true;
+                                    }
+                            }
+                    }
+                //For ERT triggered dataset
+                if(!isMB && !ertTriggerFired)
+                    {
+                        continue;
+                    }
+
+                float pT  = fake_jets[f].pT;
+
+                hFake[0]->Fill(pT);
+                if(cBin == 1)
+                    {
+                        hFake[1]->Fill(pT);
+                    }
+                if(cBin == 2)
+                    {
+                        hFake[2]->Fill(pT);
+                    }
+                if(cBin == 3)
+                    {
+                        hFake[3]->Fill(pT);
+                    }
+                if(cBin == 4)
+                    {
+                        hFake[4]->Fill(pT);
+                    }
+            }
+    }
+};
+
+#endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

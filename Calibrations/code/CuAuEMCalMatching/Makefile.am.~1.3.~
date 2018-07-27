@@ -1,0 +1,50 @@
+AUTOMAKE_OPTIONS = foreign
+
+INCLUDES = -I$(includedir) -I$(OFFLINE_MAIN)/include -I$(ROOTSYS)/include
+
+lib_LTLIBRARIES = \
+  libforEMCalMatching.la 
+
+noinst_HEADERS = \
+  forEMCalMatchingLinkDef.h 
+
+include_HEADERS = \
+  forEMCalMatching.h \
+  CuAu200_PC3_matching.h
+
+libforEMCalMatching_la_SOURCES = \
+  forEMCalMatching.C \
+  CuAu200_PC3_matching.cxx \
+  forEMCalMatching_Dict.C
+
+libforEMCalMatching_la_LIBADD = \
+  -L$(libdir) \
+  -L$(OFFLINE_MAIN)/lib \
+  -lSubsysReco \
+  -lTOAD
+
+nobase_dist_pkgdata_DATA = \
+  parametersPC3/CuAu200_pc3_par_C0_I.txt \
+  parametersPC3/CuAu200_pc3_par_C0_II.txt \
+  parametersPC3/CuAu200_pc3_par_C1_I.txt \
+  parametersPC3/CuAu200_pc3_par_C1_II.txt \
+  parametersPC3/CuAu200_pc3_par_C2_I.txt \
+  parametersPC3/CuAu200_pc3_par_C2_II.txt \
+  parametersPC3/CuAu200_pc3_par_C3_I.txt \
+  parametersPC3/CuAu200_pc3_par_C3_II.txt \
+  parametersPC3/CuAu200_pc3_par_C4_I.txt \
+  parametersPC3/CuAu200_pc3_par_C4_II.txt \
+  parametersPC3/CuAu200_pc3_par_C5_I.txt \
+  parametersPC3/CuAu200_pc3_par_C5_II.txt \
+  parametersPC3/CuAu200_pc3_par_C6_I.txt \
+  parametersPC3/CuAu200_pc3_par_C6_II.txt
+
+# Rule for generating CINT dictionaries from class headers.
+forEMCalMatching_Dict.C: \
+  forEMCalMatching.h \
+  forEMCalMatchingLinkDef.h
+	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
+
+clean-local:
+	rm -f *Dict*
+

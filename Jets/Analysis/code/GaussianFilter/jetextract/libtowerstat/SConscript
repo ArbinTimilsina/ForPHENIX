@@ -1,0 +1,37 @@
+# -*- mode: python; -*-
+
+import os
+
+Import('env')
+# Import('root_cpppath')
+# Import('root_libpath')
+# Import('root_linkflags')
+# Import('root_libs')
+# Import('phenix_offline_cpppath')
+# Import('phenix_offline_libpath')
+# Import('phenix_offline_linkflags')
+# Import('phenix_offline_libs')
+
+CPPPATH = env['CPPPATH']
+
+libextract_env = env.Copy()
+libextract_env.Prepend(CPPPATH = [os.path.join('#', 'libppmd')])
+libextract_env.Prepend(CPPPATH = [os.path.join('#', 'libjetevent')])
+libextract_env.Prepend(CPPPATH = [os.path.join('#', 'libextract')])
+libextract_env.Prepend(CPPPATH = ['#'])
+
+# libextract_env.Append(CPPPATH = root_cpppath)
+# libextract_env.Append(LIBPATH = root_libpath)
+# libextract_env.Append(LINKFLAGS = root_linkflags)
+# libextract_env.Append(LIBS = root_libs)
+
+libextract_env.Append(LIBPATH = ['#/libjetevent', '#/libppmd'])
+
+libextract_env.Prepend(LIBS = ['jetevent', 'ppmd'])
+
+# if phenix_offline_cpppath != []:
+#     libextract_env.Append(CPPPATH = phenix_offline_cpppath)
+#     libextract_env.Append(LIBPATH = phenix_offline_libpath)
+#     libextract_env.Append(LINKFLAGS = phenix_offline_linkflags)
+#     libextract_env.Append(LIBS = phenix_offline_libs)
+#     libextract_env.SharedLibrary('extract', ['extract.cc'])

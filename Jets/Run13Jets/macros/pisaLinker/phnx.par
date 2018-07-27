@@ -1,0 +1,1155 @@
+c $Id: phnx.par,v 1.1 2016/10/21 14:26:25 arbint Exp $
+c Use "cvs log phnx.par" to view the revisions of this file.
+c The old header with comments is in version 1.114
+c
+c------------------ the following block is for ... -----------------
+$abs_par
+  num_nc = 2
+  nmat_nc = 942
+  zncone = 125, -125
+  thncmin = 10.0, 12.0
+  thncmax = 37., 37.
+  thetlsh = 38.0
+  linerflg = 0
+  zncref = 0.0
+  thliner = 36.2, 36.2
+  segmin = 0., 0.
+  segmax = 360., 360.
+  color_ncone = 2
+$end
+c------------------ the following block is for ... -----------------
+$aer_par
+  aer_rin         = 430.0, 450.0
+  aer_rout        = 434.0, 454.0
+  aer_zHalfLength = 125.0, 140.0
+  aer_zCenter     = 0.0, 0.0
+  aer_phimin      = -30.0, -30.0
+  aer_phimax      = +45.0, +45.0
+$end
+c------------------ the following block is for ... -----------------
+$bbc_par
+  BBCCOLOR =     6
+  BBCSEENN =     1
+  BBMEDABS =    26
+  BBMEDATT =    26
+  BBMEDBAC =    26
+  BBMEDBRE =   802
+  BBMEDCOV =    26
+  BBMEDFRO =    26
+  BBMEDMOT =    32
+  BBMEDPMT =   202
+  BBMEDQUA =   201
+  BBMEDSHI =    46
+  BBMEDSTR =    26
+  BBNUMREM =     2
+  BBABSORB =     5.500,    14.500,     0.000
+  BBATTACH =     0.000, 360.000, 6.000, 2.000, -0.500, 0.200, 1.400, 0.500, 0.200, 1.400
+  BBBACKBD =     5.500,    15.000,     0.500
+  BBBREEDE =     0.000,     1.200,     1.950
+  BBCOVERT =     0.200
+  BBFRONTB =     5.500,    15.000,     0.500
+  BBPMTSIZ =     1.090,     1.290,     2.200
+  BBPOSREM =     9.840,     0.000,    -9.840,     0.000
+  BBQUARTZ =     0.000, 360.000, 6.000, 2.000, -1.500, 0.000, 1.270, 1.500, 0.000, 1.270
+  BBSHITHI =     0.100
+  BBSPACIN =     0.300
+  BBSTRUCT =     5.000,     5.500,    12.500
+  BBZPOSIT =   144.350,  -144.350
+$end
+c------------------ the following block is for ... -----------------
+$bmhtr_par
+  iflg_bmhtr =    1
+  nmed_bmhtr =  450
+  color_bmhtr=    4
+  rad_bmhtr  = 6.86
+  thick_bmhtr=  0.5
+  zlen_bmhtr = 300.
+  zpos_bmhtr = 200.
+$end
+c------------------ the following block is for ... -----------------
+$car_par
+  ZPOS     =     280.
+  RMIN     =     510.
+  RMAX     =     590.
+  DZ       =	 20.0
+  PHI1     =     -37.5
+  PHI2     =     60.0
+  N_MED    =     41
+  ZPOS     =     248.031
+  UXPOS	   =     268.
+  UYPOS    =     -232.
+  UZPOS    =     248.031
+  UDZ      =     25.625
+  UDX1     =     110.27791
+  UDX2     =     0.
+  UDY1     =     76.849985
+  UDY2     =     76.849985
+  THE1	   =	 0.
+  PH1      =     0.
+  ALPH1    =     0.
+  ALPH2    =     0.
+  CBDX	   =     207.3402
+  CBDY     =     40. 
+  CBDZ     =     25.781
+  CBX      =     420.30752
+  CBY      =     -349.19058
+  CBZ      =     248.031
+  THICK    =     4.
+$end
+c------------------ the following block is for ... -----------------
+$conv_par
+  inner_radius_conv = 3.85
+  thickness_conv = 0.127
+  med_conv = 110
+  dz_conv  = 30.48
+  bottom_overlap_conv = 0
+  conv_ver = 3
+  conv_range =  -90.00, 270.0
+$end
+c------------------ the following block is for ... -----------------
+$crk_par
+ mirr_r     = 403.0
+ mirr_thck  =   0.01
+ mirr_the1  =  96.41
+ mirr_the2  = 122.24
+ mirr_thcut =  98.99
+ mirr_phi1  = -44.10
+ mirr_phi2  =  44.10
+ mirr_dz    = 215.0 
+$end
+c------------------ the following block is for ... -----------------
+$dc_it96_par
+ dc_suppzlength = 191.0
+ dc_inradius = 202.0
+ dc_outradius = 246.0
+ dc_phibotw = -33.75
+ dc_phitopw = 56.25
+ dc_phibote = 213.75
+ dc_phitope = 123.75
+ dc_ncells = 80
+ dc_rplane = 204.55, 205.148, 205.747, 206.345, 206.943, 207.542 
+             208.14, 208.738, 209.336, 209.935, 210.533, 211.131
+             214.85, 215.448, 216.047, 216.645
+             220.35, 220.948, 221.547, 222.145  
+             225.85, 226.448, 227.047, 227.645, 228.243, 228.842
+             229.44, 230.038, 230.636, 231.235, 231.833, 232.431
+             236.15, 236.748, 237.347, 237.945
+             241.65, 242.248, 242.847, 243.445
+ dc_planethick = 0.3
+ dc_ti_switch = 1
+ dc_winthickin = 0.0200
+ dc_winthickout = 0.020
+ dc_supptiside = 1.2
+ dc_suppalside = 1.5
+ dc_suppzthick = 27.0
+ dc_supptibase = 1.5
+ dc_suppalbase = 2.5
+ dc_ngusset = 23
+ dc_nwinin = 22
+ dc_nwinout = 10
+ dc_suppwinz = 13.
+ dc_suppwinx = 10.
+ dc_x1baserad = 2.0
+ dc_x2baserad = 2.0
+ dc_x1basez = 1.1
+ dc_x2basez = 1.1
+ dc_x1slotthick = 0.7
+ dc_x2slotthick = 1.0
+ dc_x1slotz = 2.4
+ dc_x2slotz = 2.4
+ dc_x1suppthick = 0.41
+ dc_x2suppthick = 0.41
+ dc_x1suppz = 4.0
+ dc_x2suppz = 4.0
+ dc_x1rextent = 1.75
+ dc_x2rextent = 1.75
+ dc_u1rextent =    1.75
+ dc_u1baserad =    1.20
+ dc_u1basez =      1.25   
+ dc_u1slotthick =  0.80
+ dc_u1slotz =      2.25   
+ dc_u1suppthick =  0.41
+ dc_u1suppz =      4.00
+ dc_v1rextent =    1.75
+ dc_v1baserad =    1.20
+ dc_v1basez =      1.30   
+ dc_v1slotthick =  0.90
+ dc_v1slotz =      2.20   
+ dc_v1suppthick =  0.41
+ dc_v1suppz =      4.00
+ dc_u2rextent =    1.75
+ dc_u2baserad =    1.20
+ dc_u2basez =      1.25   
+ dc_u2slotthick =  1.00
+ dc_u2slotz =      2.25   
+ dc_u2suppthick =  0.41
+ dc_u2suppz =      4.00
+ dc_v2rextent =    1.75
+ dc_v2baserad =    1.20
+ dc_v2basez =      1.30   
+ dc_v2slotthick =  1.10
+ dc_v2slotz =      2.20    
+ dc_v2suppthick =  0.41
+ dc_v2suppz =      4.00
+ thet_slotu1 =    -5.42
+ thet_slotv1 =     5.42 
+ thet_slotu2 =    -6.00
+ thet_slotv2 =     6.00
+ dc_cfibinrad =    1.27
+ dc_cfiboutrad = 2.0065
+$end
+c------------------ the following block is for ... -----------------
+$emc_par
+  emc_opt = 3
+  emc_walls = 8
+  emc_debug = 1
+  rpos_emc = 507.7
+  rpos_emc_add_pbgl = 20.0
+  emc_deltar_west = 0.0
+  emc_deltaz_west = 0.0
+  emc_deltar_east = 0.0
+  emc_deltaz_east = 0.0
+  emc_phi_sec1 = -22.152
+  emc_phi_sec2 = 0.2354
+  emc_phi_sec3 = 22.785
+  emc_phi_sec4 = 45.392
+  emc_phi_sec5 = 45.343
+  emc_phi_sec6 = 22.900
+  emc_phi_sec7 = 0.0
+  emc_phi_sec8 = -22.0
+  scint_emc_med = 881
+  fiber_emc_med = 882
+  pbgl_emc_med = 810
+  cell_size = 5.58
+  lead_emc_plates = 65
+  scint_emc_plates = 66
+  smskin_emc_thck = 0.05
+  skin_emc_thck = 0.012
+  paper_emc_thck = 0.012
+  fplate_emc_thck = 0.5
+  hut_emc_thck = 0.2
+  hut_emc_height = 6.5
+  bsteel_emc_thck = 0.1
+  scint_emc_thck = 0.4
+  lead_emc_thck = 0.15
+  cage_emc_thck = 1.0
+  clearance_emc_module = 0.03
+  clearance_emc_supermodule = 0.08
+  emc_westarm_deltay = 0.649
+  emc_westarm_deltaz = 0.816
+  emc_eastarm_deltay = 0.511
+  emc_eastarm_deltaz = 0.742
+$end
+c------------------ the following block is for ... -----------------
+$fakv_par
+  num_fakv = 2
+  ifak_flg = 0,0,0,0,0,0
+  nmed_fake= 446
+  zfake1   = -31.8
+  zfake2   = -172.00
+  zfake3   = 200.0
+  zfake4   = 172.20
+  zfake5   = 630.1
+  fak3_thick = 0.2
+  fak4_thick = 0.2
+  fakvol1  = -6.00,87.37,0.1
+  fakvol2  = -0.1,27.786,118.745,27.821,118.896
+  fakvol3  = -215.15,150.711,150.911,474.965,475.165
+  fakvol4  = -236.16,27.621,27.821,110.974,111.174
+  fakvol5  = -0.1,111.1,474.81,111.138,474.965
+  fakvol6  = 0.10,0.30,30.0
+  color_fake = 2
+$end
+c------------------ the following block is for ... -----------------
+$fcl_par
+  Sides        = 1
+  Rows         = 10
+  Columns      = 9
+  ZFront      = 1757.4
+  XFront	  = -19.4
+  YFront	  = -1.5875
+  Angle	  = 2.0262
+  ModuleSpacing = 10.16
+  SideWallWidth = .3175
+  BottomWallWidth = 5.08
+  TopWallWidth = 1.905
+  FrontWallWidth = 1.27
+$end
+c------------------ the following block is for ... -----------------
+$hall_par
+  arm_shift = 0
+  east_shift = 0.0, 0.0, 0.0
+  west_shift = 0.0, 0.0, 0.0
+$end
+c------------------ the following block is for ... -----------------
+$hbd_par
+  hbdg_rin = 4.5
+  hbdg_rout = 66.0
+  hbdg_dz = 32.82
+  hbdg_gas = 'CF4'
+  shade_in = 0
+  shade_height = 2.5
+  shade_spacing_y = 2.5
+  shade_spacing_x = 2.5
+  hbd_westarm = 1
+  hbd_eastarm = 1
+  hbd_electronics = 1
+  hbd_cf4gas = 1
+  hbd_covers = 1
+  hbd_hvpanels = 1
+  hbd_walls = 1
+  hbd_window = 1
+  hbd_window_support = 1
+  hbd_gem_t = 1
+  hbd_gem_m = 1
+  hbd_gem_b = 1
+  hbd_gem_frames = 1
+  hbd_csi = 1
+  hbd_apanels = 1											 
+$end
+c------------------ the following block is for ... -----------------
+$hbd_sup_par
+  sup_par =  3.0, 0.4, 64.8
+  sup_pos =  50.8, 86.2, 0.0
+$end
+c------------------ the following block is for ... -----------------
+$helium_bag_par
+  heb1_rin   = 32.0
+  heb1_rout  = 53.3
+  heb1_halfz = 30.0
+  heb2_z    =  -98.0, -76.0, -76.0, -44.0,  44.0,  76.0,  76.0,  98.0
+  heb2_rin  =  187.8, 133.1, 133.1,  53.6,  53.6, 133.1, 133.1, 187.8
+  heb2_rout =  187.8, 187.8, 200.5, 200.5, 200.5, 200.5, 187.8, 187.8
+$end
+c------------------ the following block is for ... -----------------
+$helium_bagn_par
+  heb1_rin   = 22.5
+  heb1_rout  = 53.3
+  heb1_halfz = 26.0
+  heb2_z    =  -98.0, -76.0, -76.0, -44.0,  44.0,  76.0,  76.0,  98.0
+  heb2_rin  =  187.8, 133.1, 133.1,  53.6,  53.6, 133.1, 133.1, 187.8
+  heb2_rout =  187.8, 187.8, 200.5, 200.5, 200.5, 200.5, 187.8, 187.8
+$end
+c------------------ the following block is for ... -----------------
+$itr_pc1_par
+ pc1nchmb = 16      
+ pc1tetgt = 11.25   
+ pc1dzext = 197.4   
+ pc1rinst = 246.3   
+ pc1routs = 252.5   
+ pc1grsht = 0.0254  
+ pc1grhex = 2.540   
+ pc1gasgp = 0.6     
+ pc1ctsht = 0.0254  
+ pc1cthex = 2.540   
+ pc1elect = 1.0     
+ pc1epoxy = 0.005    
+ pc1wires = 0.01    
+ med_carbon_epoxy = 490   
+ med_s2_glass_epoxy = 491 
+ med_hexcell = 492        
+ med_epoxy_glue = 493     
+ med_pc_gas = 494         
+ med_pc_board = 495       
+ med_ground_cathode = 496 
+ med_mother_board = 497   
+ med_wire_plane = 498
+ col_sector = 3
+ col_hexcell = 7
+ col_fiber = 4
+ col_pd_gas = 0
+ col_electr = 6     
+ delphi1 = -11.25   
+ delphi2 = +11.25   
+$end
+c------------------ the following block is for ... -----------------
+$mag_par
+  muo_arms = 2
+  npl_cent  = 16
+  nmed_cent = 5
+  color_cent = 3
+  z_cent    =   60.0,  89.12,  99.87,  99.88, 102.95, 120.00, 120.01, 129.66
+              129.67, 132.20, 132.21, 135.00, 135.10, 165.00, 165.10, 242.00
+  rmin_cent =   6.00,  8.913,  9.988,  9.989, 10.296, 12.001, 90.434, 97.706
+              97.713, 99.620, 99.627, 101.73, 101.81, 124.34, 153.15, 215.77
+  rmax_cent = 80.000, 160.00, 160.00, 190.00, 198.00, 198.00, 198.00, 198.00  
+              255.00, 255.00, 210.85, 210.85, 235.50, 235.50, 235.00, 235.00
+  npl_end    = 15, 14
+  z_end=200., 201.1797, 204.5392, 209.567, 215.498
+        243.,243.1,345.,345.1,382.,393.909,458.637,557.,557.1,630.0,10*0.
+        200., 201.9344, 207.4433, 215.6878, 225.413
+        243.,243.1, 295.0,295.1,332.0,342.552, 417.0,417.1,480.0,11*.0
+  rmax_end=22.5, 28.4308, 33.4587, 36.8183, 37.998
+           42.847,42.865,60.833,48.83,48.83,69.457,80.87,80.87,93.74
+           93.74,10*0.
+           22.5, 32.2251, 40.4697, 45.97856, 47.913
+           51.6639,51.6852,62.7217,53.717,53.717,71.994
+           71.994,80.944,80.944,11*0.
+  rmin_end=22.5,5*22.5, 19*11., 22.5,5*22.5,19*11.0
+  coil_irad1 = 80.87,71.994
+  coil_orad1 = 85.87,75.883
+  coil_irad2 = 93.74,80.944
+  coil_orad2 = 98.74,89.274
+  coil_z12   = 487.0,556.9,560.0,629.95,357.0,417.0,420.0,480.0
+  coil_med   = 15
+  color_coil = 2
+  color_endc = 4
+  mega_irad1 =-150.711, -150.711
+  mega_orad1 = 160.711, 160.711
+  mega_irad2 = 474.965, 294.820
+  mega_orad2 = 484.965, 304.820
+  mega_z12   = 200.0, 630.0, 200.0, 480.0
+  mega_med   = 5
+  pist_thet  = 10.0
+  shad_thet  = 37.0
+  mega_thick = 10.0
+  depth_notch = 13.4
+  coil_thick  = 5.15
+  iflag_pcore = 1
+  zpist_core  = 260.,625.,260.,475.
+  pcore_rad   = -11.0,30.00,11.0,80.0,-11.0,30.00,11.0,80.0
+  pcdelr      = 14.0,30.0,14.0,30.0
+  nmed_pcore  = 40
+  iflag_ccore = 1
+  npc_core    = 4, 7
+  zcent_core  = 65.0, 95.0, 95.1, 115.1 
+                65.0, 89.1, 115., 115.1, 135.0, 135.1, 160.
+  ccore_rmin  = 11.5, 14.4, 14.5, 16.5 
+                80.0, 80.0, 80.0,  91.7, 106.7, 106.8, 124.5
+  ccore_rmax  = 53.0, 53.0, 80.0, 80.0 
+                88.74,155.0,155.0,155.0, 155.0, 230.0, 230.0,
+  nmed_ccore  = 40
+  cyoke_dz = 242.0
+  cyoke_dx = 79.9275
+  cyoke_dy = 50.0
+  cyoke_yp = 345.0
+  dyoke_dz = 53.5
+  dyoke_dy = 36.15
+  dyoke_dx = 79.9275
+  dyoke_yp = 258.85
+  dyoke_zp = 188.5
+  dyoke_arc = 13.5
+  cencoil_med = 15,15
+  cencoil_color = 2,2
+  cencoil_z = 60.0, 90.0, 99.87, 129.66
+  cencoil_rin =  53.6, 160.0
+  cencoil_rout = 80.0, 190.0 
+  pist2_thet = 168.0
+  fin_thick = 5.0
+  fin_z1 = 267.5, -276.78
+  fin_z2 = 327.5, -216.78
+  corn_ang = 39.18,140.82
+  buss_z = 568.5,-405.0
+  buss_thick = 3.0
+  buss_wide = 3.0
+  flag_par = 4.12,6.35,7.94
+  wtr_par = 20.,0.,1.,270.,450.
+  rib_z1 = 200.,-200.,336.,-286.
+  rib_z2 = 204.,-204.,340.,-290.
+  flag_z = 576.5,-427.94
+  fin_flag=1
+  buss_flag=1
+  buss_buss_flag=1
+  wtr_flag=1
+  rib_flag=1
+  fin_med = 5
+  buss_med = 15
+  flag_med = 5
+  rib_med = 5
+  cutt_med = 19
+  wtr_med = 802
+  ret_ring_par=0.,360.,3, -3.75,160.0,160.1, -.65,160.0,175.0, 3.75,160.0,175.0,
+  ret_ring_pos=0.,0.,95.
+  ret_ring_rot=90.,0.,90.,90.,180.,90.
+  retmed=5
+$end
+c------------------ the following block is for ... -----------------
+$mum_par
+  mumtrflg              =       5
+  mum_arms              =       2
+  mum_stations          =       3
+  mum_channels          =       100
+  mum_color             =       4
+  FEEFlag               =       1
+  StationOneFrame       =       20.684, 147.317, 17.017, 131.885
+                                0.635, 6.504, 3.810, 2.537
+  StationOnePanel       =       20.380, 142.636, 19.991, 139.590
+                                1.402, 1.168, 0.005, 3.536
+  StationOneAnode       =       18.406, 134.551, 0.644, 2.483
+  StationOneRead        =       2.983, 110.429, 0.107, 81.425
+                                2.034, 142.635, 144.928, 3.535
+  StationOneRib         =       0.350, 107.798, 79.430, 32.740
+                                1.499, 107.798, 60.453
+  StationOneGas         =       15.579, 117.577, 15.354, 6.019
+                                29.070, 131.071, 2.397, 1.339
+  StationOneMount       =       1.270, 2.540, 23.500, 152.300
+                                25.501, 135.328, 5.080
+  StationOneFee         =       1.000, 22.500, 162.500, 32.500
+                                87.345, 7.938, 77.752, 22.300
+                                26.848, 13.401
+  StationOneAngles      =       90., 22.5,  90., 112.5, 0.0, 0.0
+                                90., 112.5, 90., 202.5, 0.0, 0.0
+                                90., 202.5, 90., 292.5, 0.0, 0.0
+                                90., 292.5, 90., 22.5,  0.0, 0.0
+                                90., 22.5,  90., 112.5, 0.0, 0.0
+                                90., 112.5, 90., 202.5, 0.0, 0.0
+                                90., 202.5, 90., 292.5, 0.0, 0.0
+                                90., 292.5, 90., 22.5,  0.0, 0.0
+  StationOneOffsets     =       0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.006
+                                0.0, 0.0, -0.014
+                                0.0, 0.0, 0.051
+                                0.0, 0.0, 0.000
+  StationTwoFFrame      =       66.500, 265.949, 52.900, 239.205
+                                2.841, -9.174, -3.800
+                                68.000, 227.379, 53.950 199.899
+                                2.841, -9.174, -3.800
+  StationTwoBFrame      =       275.379, 248.021
+                                236.473, 208.993
+  StationTwoFBar        =       152.190, 154.092
+                                138.959, 141.181
+  StationTwoBBar        =       162.164, 164.069
+                                143.959, 146.181
+  StationTwoAnode       =       0.15875, 0.15875
+  StationTwoFoilThickness =     0.0025
+  StationTwoAlFoilThickness =   0.0050
+  StationTwoFRib        =       0.500, 188.119, 135.435, 56.099
+                                0.500, 147.654, 118.051, 48.898
+  StationTwoBRib        =       0.500, 196.513, 139.433, 57.755
+                                0.500, 156.748, 122.251, 50.638
+  StationTwoFGas        =       53.522, 228.910, 9.827, 3.800
+                                9.636, 4.262
+                                54.992, 193.000, 9.827, 3.800
+                                9.636, 4.262
+  StationTwoBGas        =       239.022
+                                201.999
+  StationTwoAngles      =       90., 337.5, 90., 67.5,  0.0, 0.0
+                                90., 22.5,  90., 112.5, 0.0, 0.0
+                                90., 67.5,  90., 157.5, 0.0, 0.0
+                                90., 112.5, 90., 202.5, 0.0, 0.0
+                                90., 157.5, 90., 247.5, 0.0, 0.0
+                                90., 202.5, 90., 292.5, 0.0, 0.0
+                                90., 247.5, 90., 337.5, 0.0, 0.0
+                                90., 292.5, 90., 22.5,  0.0, 0.0
+                                90., 337.5, 90., 67.5,  0.0, 0.0
+                                90., 22.5,  90., 112.5, 0.0, 0.0
+                                90., 67.5,  90., 157.5, 0.0, 0.0
+                                90., 112.5, 90., 202.5, 0.0, 0.0
+                                90., 157.5, 90., 247.5, 0.0, 0.0
+                                90., 202.5, 90., 292.5, 0.0, 0.0
+                                90., 247.5, 90., 337.5, 0.0, 0.0
+                                90., 292.5, 90., 22.5,  0.0, 0.0
+  StationTwoOffsets     =       0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.0
+                                0.0, 0.0, 0.024 
+                                0.0, 0.0, -0.070
+                                0.0, 0.0, 0.062 
+                                0.0, 0.0, -0.095
+                                0.0, 0.0, 0.055 
+                                0.0, 0.0, -0.113
+  StationThreeFrame     =       98.472, 427.472, 94.502, 418.422
+                                0.635, 6.133, 2.540, 6.035, 2.500
+                                88.093, 321.093, 84.383, 311.183
+                                0.635, 6.133, 2.540, 6.035, 2.500
+  StationThreePanel     =       96.487, 422.947, 2.165, 1.968
+                                0.005, 3.067, 1.270
+                                86.108, 316.568, 2.165, 1.968
+                                0.005, 3.067, 1.270
+  StationThreeAnode     =       89.483, 412.283, 0.635, 11.106, 4.600
+                                75.848, 302.648, 0.635, 11.106, 4.600
+  StationThreeRib       =       2.540, 327.255, 235.828, 97.683
+                                2.540, 228.355, 180.360, 74.709
+  StationThreeGas       =       87.423, 405.430, 3.318, 0.000
+                                2.348, 2.348
+                                76.548, 298.049, 3.318, 0.000
+                                2.348, 2.348
+  StationThreeAngles    =       90., 337.5, 90., 67.5,  0.0, 0.0
+                                90., 22.5,  90., 112.5, 0.0, 0.0
+                                90., 67.5,  90., 157.5, 0.0, 0.0
+                                90., 112.5, 90., 202.5, 0.0, 0.0
+                                90., 157.5, 90., 247.5, 0.0, 0.0
+                                90., 202.5, 90., 292.5, 0.0, 0.0
+                                90., 247.5, 90., 337.5, 0.0, 0.0
+                                90., 292.5, 90., 22.5,  0.0, 0.0
+                                90., 337.5, 90., 67.5,  0.0, 0.0
+                                90., 22.5,  90., 112.5, 0.0, 0.0
+                                90., 67.5,  90., 157.5, 0.0, 0.0
+                                90., 112.5, 90., 202.5, 0.0, 0.0
+                                90., 157.5, 90., 247.5, 0.0, 0.0
+                                90., 202.5, 90., 292.5, 0.0, 0.0
+                                90., 247.5, 90., 337.5, 0.0, 0.0
+                                90., 292.5, 90., 22.5,  0.0, 0.0
+  StationThreeOffsets   =       0.0, 0.0, 0.841
+                                0.0, 0.0, 0.725  
+                                0.0, 0.0, 0.344
+                                0.0, 0.0, 0.061 
+                                0.0, 0.0, 0.04  
+                                0.0, 0.0, 0.0    
+                                0.0, 0.0, 0.406  
+                                0.0, 0.0, 0.752 
+                                0.0, 0.0, 0.0 
+                                0.0, 0.0, 0.02
+                                0.0, 0.0, -0.005
+                                0.0, 0.0, -0.011
+                                0.0, 0.0, -0.034
+                                0.0, 0.0, -0.029
+                                0.0, 0.0, 0.02
+                                0.0, 0.0, 0.03
+  PlanesPerStation      =       3,     3,     2
+                                3,     3,     2
+  StationNominalZpos    =       186.65, 352.24, 364.92, 613.84
+                                186.561, 299.28, 311.596, 463.133
+  ArmMedium             =       19
+  StationMedium         =       70
+  FrameMedium           =       802,    26,    802
+                                802,    26,    802
+  SpokeMedium          =        802
+  HoneyMedium          =        452
+$end
+c------------------ the following block is for MUID -----------------
+$mun_par
+  muid_flg       = 1
+  mu_floor_flg   = 1
+  muid_shield    = 1
+  muid_zmin = 695.7
+  muid_zmax = 902.75
+  muid_ang  = 37.0
+  beam_height   = 523.2
+  mu_top_height = 1066.8
+  mu_floor_height = 8.0
+  mu_strp_thick   = 0.05
+  mu_gas_thick    = 10.0
+  mu_plas_thick   = 0.15
+  mu_yoke_thick   = 15.0,10.0
+  mu_donut_thick   = 10.0,0.0,5.0,10.0
+  mu_floor_thick  = 4.0
+  mu_abs_thick = 0.0,5.0,5.0,3*10.0
+  mu_hi_abs    = 0.0,2.0,2.0,3*2.5
+  mu_hi_med      = 6*41
+  mu_lo_med      = 6*447
+  nmed_mu_ps     = 802
+  nmed_mu_gas    = 443
+  nmed_mu_cs     = 449
+  nmed_mu_sh     = 6
+  nmed_mu_sd     = 6
+  nmed_mudn      = 5
+  nmed_muhl      = 6
+  nmed_mufl      = 41
+  nmed_yoke      = 5
+  mu_hi_color    = 4
+  mu_lo_color    = 5
+  color_muid     = 3
+  color_hole     = 6
+  color_dont     = 2
+  color_floor    = 6
+  color_strd     = 4
+  color_yoke     = 6
+  rykmin1        = 11.0,11.0
+  rykmin2        = 11.0,11.0
+  rmin_donut     = 11.0,11.0
+  rmax1_donut    = 116.4,0.,150.,88.404
+  rmax2_donut    = 116.4,0.,160.,108.404
+  zyoke          = 630.0,-480.0
+  zgap_yoke_abs  = 50.0,
+  zgap_labs_ldet   = 0.
+  muid_delx = 0.
+  str_xstag = 0.2
+  muhl_shld_flag = 0
+  color_muhl_shld = 4
+  nmed_muhl_shld  = 447 
+  z_muhl_shld  = -680.2,890.0
+  thick_muhl_shld = 5.0
+  muhl_config_flag = 2
+  muabs_config_flag= 2
+  mu_abs_x = 655.32
+  mu_abs_y = 529.60
+  mu_abs_z = 0.,711.15,753.05,791.75,837.25,882.75
+  npl_muhl = 2
+  rmin_muhl = 6.35, 6.35, 0., 0., 0., 0.
+  rmax_muhl = 82.3,82.3,4*0.0
+  z_muhl    = 683.0,930.,4*0.
+  mu_flag_cracks = 3
+  nmed_cracks    = 6
+  crack_size     = 2.54
+  num_cracks     = 2
+  crack_shift    = 10.
+  crack_color    = 4
+$end
+c------------------ the following block is for ... -----------------
+$mun_collar_par
+  nseg_collar = 2
+  nmed_collar = 46
+  color_collar = 2
+  z_collar = -670.0, -531.0 
+  rmin_collar = 15.2, 15.2
+  rmax_collar = 45.2, 45.2
+$end
+c------------------ the following block is for ... -----------------
+$muon_abs_par
+  abs_par =  17.5, 24.0, 94.0, 30.0, 121.0
+  abs_pos =  0.0, 0.0, 144.5
+$end
+c------------------ the following block is for the MPC -----------------
+$mupc_coord
+  utrgPC1_north =  162.00
+  utrgPC1_south = -162.00
+  utrgPC2_north =  690.19
+  utrgPC2_south = -690.19
+  utrgPC3_north =  907.20
+  utrgPC3_south = -907.20
+  uPC1_rin  = 33 
+  uPC1_rout = 105
+  uPC1_DZ   = 1.0
+  uPC2N_rin  = 0
+  uPC2N_rout = 0
+  uPC2N_DZ   = 1.0
+  uPC2S_rin  = 0
+  uPC2S_rout = 0
+  uPC2S_DZ   = 1.0
+  uPC3N_rin  = 158.17
+  uPC3N_rout = 491.03
+  uPC3N_DZ   = 1.0
+  uPC3S_rin  = 158.17
+  uPC3S_rout = 491.03
+  uPC3S_DZ   = 1.0
+$end
+c------------------ the following block is for the CM nosecone-----------------
+$ncone_par
+  num_nc  = 2
+  nconeflg= 1
+  nmed_nc = 17
+  nseg_nc = 13, 13
+  zncone = 41.0, 42.994
+           44., 45., 45., 46., 47., 48., 49., 50., 51.
+           52.33, 60.
+           87*0.
+           -41.0, -42.994
+           -44., -45., -45. -46., -47., -48., -49., -50., -51.
+           -52.33, -60.
+           87*0.
+  rncmn  = 4*7.62, 96*6.248, 4*7.62, 96*6.248
+  rncmx  = 42.0, 47.1837, 49.133, 50.4022, 50.4022, 51.3415, 52.0612
+           52.6139, 53.0293, 53.3248, 53.5112, 53.6, 53.6
+           87*0.
+           42.0, 47.1837, 49.133, 50.4022, 50.4022, 51.3415, 52.0612
+           52.6139, 53.0293, 53.3248, 53.5112, 53.6, 53.6
+           87*0.
+  thncref = 33.97
+  thetlsh = 38.0
+  zncref  = -32.0
+  color_ncone = 5
+  linerflg= 0
+  nmed_liner = 18
+  thliner    = 5.0
+$end
+c------------------ the following block is for ... -----------------
+$ntsh_par
+  num_ntsh = 2
+  ntshflg = 0
+  shneuz1 = 120.1
+  shneut  = -22.45,21.177,90.502,26.551,113.47
+  nmed_ntsh = 445
+$end
+c------------------ the following block is for ... -----------------
+$pbsh_par
+  num_pbsh = 2
+  ipbshflg= 0
+  pbcurz1 = -165.00
+  pbcurt  = -3.5,26.55,113.47,27.79,118.745
+  nmed_pbsh = 448
+$end
+c------------------ the following block is for ... -----------------
+$pc23_par
+ pc2arm0 = 1
+ pc2arm1 = 0
+ pc3arm0 = 1
+ pc3arm1 = 1
+ pc23nchmb = 8     
+ pc23tetgt = 22.5  
+ pc2dzext = 336.62
+ pc2dzgas = 314.07	
+ pc3dzext = 389.39
+ pc3dzgas = 366.06  
+ pc2rinst = 415.00 
+ pc3rinst = 488.05 
+ pc2grsht = 0.0508 
+ pc3grsht = 0.0762 
+ pc2grhex = 3.175  
+ pc3grhex = 3.810  
+ pc2gasgp = 1.0    
+ pc3gasgp = 1.2    
+ pc2ctsht = 0.0254 
+ pc3ctsht = 0.0508 
+ pc2cthex = 3.175  
+ pc3cthex = 3.810  
+ pc2elect = 0.947  
+ pc3elect = 1.0    
+ pc23sbar = 1.905 
+ pc23sbth = 0.4    
+ pc23cbar = 5.08   
+ pc23cbth = 0.2    
+ pc23epoxy = 0.0025 
+ pc23wires = 0.01  
+ med_carbon_epoxy = 690   
+ med_s2_glass_epoxy = 691 
+ med_hexcell = 692        
+ med_epoxy_glue = 693     
+ med_pc_gas = 694         
+ med_pc_board = 695       
+ med_ground_cathode = 696 
+ med_mother_board = 697   
+ med_wire_plane = 698     
+ col_sector = 3
+ col_hexcell = 2
+ col_fiber = 4
+ col_pd_gas = 1
+ col_electr = 5     
+ delphi1 = -11.25  
+ delphi2 = +11.25
+ sbardz  = 2.28 
+ sbardy  = 3.0 
+ enbdz   =.318
+ enbdy   =3.0 
+ tbar1dy =.45
+ tbar1dz =1.148
+ tbar2dy =3.75
+ tbar2dz =.7280
+ sbarpz  =1.75
+ sbarpx  =0.
+ sbarpy  =2.15
+ Ibar1dy =.36
+ Ibar1dz =2.54
+ Ibar2dy =3.8
+ Ibar2dz =.7705
+ yshift  =.45
+ ibeamtf =.true.
+ med_s2  =691
+ med_alu =26
+ yshift2 =-.50
+ p3yoff  =.42   
+$end
+c------------------ the following block is for ... -----------------
+$pip_par
+  nmed_pipe   =  33,5,447
+  zleng_pipe  =  75.0,93.0,332.0
+  thick_pipe  =  0.1016,0.12446,0.21
+  radius_pipe =  3.81,3.81,6.35
+  zpos_pipe   =  0.00,75.0,261.0
+  nmed_vacu   =  32
+  color_pipe  = 4
+$end
+c------------------ the following block is for ... -----------------
+$pipn_par
+  nmed_pipe   =  33,35,447
+  zleng_pipe  =  40.0,44.23,332.
+  thick_pipe  =  0.076,0.1605,0.165
+  radius_pipe =  2.0765,2.16,3.97
+  zpos_pipe   =  0.00,40.0,128.46
+  nmed_vacu   =  32
+  color_pipe  = 4
+$end
+c------------------ the following block is for ... -----------------
+$plug_par
+  num_plug = 2
+  iplugflg  = 1
+  npl_plug  = 5
+  nmed_plug = 15
+  color_plug = 2
+  npl_plug  = 5
+  z_plug    =  124.86, 139.859, 139.860, 154.82, 170.75
+               124.86, 139.859, 139.860, 154.82, 170.75
+  rmin_plug =   12.49,  13.987,  15.491,  15.497, 17.081
+                12.49,  13.987,  15.491,  15.497, 17.081
+  rmax_plug =  -19.74,   0.0,     0.0,     0.0,   29.85
+               -25.27,   0.0,     0.0,     0.0,   36.19
+  plug_thet = 9.63, 12.0
+  imountflg = 1
+  num_mount = 2
+  npl_mount = 2
+  nmed_mount = 15
+  color_mount = 2
+  z_mount     = 120.10, 124.85
+                120.10, 124.85
+  rmin_mount  =  12.02,  12.49
+                 12.02,  12.49
+  rmax_mount  =  33.00,  33.00
+                 33.00,  33.00
+  iwrapflg = 1
+  nmed_wrap = 455
+  color_wrap = 4
+  wrap_thetmin =  5.7,  5.7
+  wrap_thetmax = 9.63, 12.00
+  wrap_dr = 1.29, 1.30
+  wrap_dz = 6.6, 6.6
+$end
+c------------------ the following block is for ... -----------------
+$rack_par
+  NE       = .TRUE.
+  SE       = .FALSE.
+  SW       = .FALSE.
+  NW       = .FALSE.
+  MA       = .FALSE.
+  NECH     = 'NEA1','NEA2','NEA3','NEA4','NEA5'
+  NWCH     = 'NWA1','NWA2'
+  SWCH     = 'SWA1',
+  SECH     = 'SEA1'
+  MACH     = 'MAW1','MAE1'
+  NEA      = 581.927, 295.510, 350.846, 030.480, 106.680, 045.720
+	     518.196, 295.510, 350.846, 030.480, 106.680, 045.720
+	     452.466, 295.510, 350.846, 030.480, 106.680, 045.720
+	     388.736, 295.510, 350.846, 030.480, 106.680, 045.720
+	     581.927, -295.510, 350.846, 030.480, 078.740, 045.720
+  NWA      = -581.927, 000.000, 350.846, 030.480, 106.680, 045.720
+             -581.927, 295.510, 350.846, 030.480, 106.680, 045.720
+  SWA      = 581.927, 295.510, -350.846, 030.480, 106.680, 045.720
+  SEA      = -581.927, 295.510, -350.846, 030.480, 106.680, 045.720
+  MAG      =-180.000, -327.660, 152.364, 030.480, 066.040, 045.720
+             180.000, -327.660, -152.364, 030.480, 066.040, 045.720
+  THICK    = 1.0
+$end
+c------------------ the following block is for ... -----------------
+$rhic_mag
+  iflag_lead_abs = 0
+  nmed_g10 = 24
+  nmed_cu = 15
+  nmed_dx = 1199
+  lead_abs_par = 12.0, 400., 1.0
+  lead_abs_pos = 0.0, 0.0, 3.75778e+03
+  nmed_lead_abs = 1198
+$end
+c------------------ the following block is for ... -----------------
+$sili_br_par
+  sili_br_nlayers   =   4
+  sili_br_r         =   2.63,     5.1926,    11.765,    16.687,     1.141
+  sili_br_z         =   0.0,     0.0,     0.0,     0.0
+  sili_br_nsn       =   4,       4,       5,       6
+  sili_br_snhalfx   =   0.696,   0.696,   1.745, 1.745
+  sili_br_snhalfy   =   0.01,    0.01,    0.03125,   0.03125
+  sili_br_snhalfz   =   2.836,   2.836,   3.1877,  3.1877
+  sili_br_bp_thk    =   0.0017
+  sili_br_psv_thk   =   0.09
+  sili_br_k3_thk    =   0.09,    0.33
+  sili_br_tb_thk    =   0.0381,  0.2538
+  sili_br_stv_thk   =   0.05,    0.0410,  0.0408
+  sili_br_bus_thk   =   0.03,  0.003
+  sili_br_rcc_thk   =   0.1484,  0.0027
+  sili_br_tap_thk   =   0.0127,  0.0027
+  sili_br_rsn_thk   =   0.01
+  sili_br_x0add     =   0.0190,  0.0190,  0.0,   0.0
+  sili_br_snzgap    =   0.02,      0.02,      0.,      0.
+  sili_br_nsec      =   2,       2,       2,       2
+  sili_br_nlad(1,1) =   5,       5
+  sili_br_nlad(1,2) =  10,      10
+  sili_br_nlad(1,3) =   8,       8
+  sili_br_nlad(1,4) =  12,      12
+  sili_br_phic(1,1) =   0.,    180.
+  sili_br_phic(1,2) =   0.,    180.
+  sili_br_phic(1,3) =   0.,    180.
+  sili_br_phic(1,4) =   0.,    180.
+  sili_br_dphi      =  26.7,  13.626,  17.0,   12.0
+  sili_br_stdphi(1,3) = 28.59, 16.06, 18.04, 17.16, 30.85
+  sili_br_stdphi(1,4) = 24.87, 12.04, 12.44, 11.57, 22.97
+  sili_br_tilt      =  13.0,    12.98,    0.0,      0.0
+  sili_br_nspring   =   8
+  sili_br_spz       = -12.6, -12.6, -17.0, -20.3,  12.6,  12.6,  17.0,  20.3
+  sili_br_sprin     =   3.7,   6.4,  10.2,  15.2,   3.7,   6.4,  10.2,  15.2
+  sili_br_sprout    =   4.8,   7.4,  14.2,  21.6,   4.8,   7.4,  14.2,  21.6
+  sili_br_spthck    =   0.31,  0.31,  0.31,  0.31,  0.31,  0.31,  0.31,  0.31
+  sili_br_manz      = -15.5, -15.5, -19.3, -23.0,  15.5,  15.5,  19.3,  23.0
+  sili_br_manr     =    4.4,   7.9,  13.2,  18.2,   4.4,   7.9,  13.2,  18.4
+  sili_br_mandia    =   0.635, 0.635, 0.635, 0.635, 0.635, 0.635, 0.635, 0.635
+  sili_br_misalignment    =   0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0,  0.0
+  sili_wheel_yesno = 1
+  siwh_ppcb_half   = 6.0, 9.0, 0.125
+  siwh_spcb_half   = 2.8, 4.7925, 0.1
+  siwh_fpcb_thick   = 0.07938
+  siwh_pcb_z       = -39.00, -36.70, -34.26, -31.81, -28.42, 28.42, 31.81, 34.26, 36.70, 39.00
+  siwh_pcb_rmax    = 50.0
+  siwh_pcb_connz   = 0.3
+  siwh_pcb_suppz   = 0.238, 0.238, 0.238, 0.238, 0.238,   0.238, 0.238, 0.238, 0.238, 0.238
+  siwh_roha1_thick = 0.3
+  sili_br_ct_radius = 0.30
+  sili_endcap_z     = -38.20, -32.17, -26.14, -20.11, 20.11, 26.14, 32.17, 38.20
+  vtx_shiftx = 0.0
+  vtx_shifty = 0.0
+  vtx_shiftz = 0.0
+  vtx_alignment_file1 = 'svxPISA_default.par '
+  vtx_alignment_file2 = 'svxPISA_dummy.par'
+$end
+c------------------ the following block is for the VTX/FVTX cage: -----------------
+$sili_cg_par
+  sili_cg_npcon     =   6
+  sili_cg_z         = -40.0, -26.5, -26.5, 26.5, 26.5, 40.0
+  sili_cg_rmn       =   2.2
+  sili_cg_rmx       =  53.0, 53.0,   22.14782, 22.14782, 53.0, 53.0
+  sili_cg_thck      =   0.5
+  sili_cg_inthck    =   0.2
+  sili_cg_xdisp     =   0.0
+  sili_cg_ydisp     =   0.0
+  sili_cg_zdisp     =   0.0
+  sili_cg_tempc     =   0.0
+  sili_cg_rinner         = 3.5
+  sili_cg_swedge_len     = 5.99
+  sili_cg_bwedge_len     = 13.6
+  sili_cg_support_thk    = 0.625
+  fcg_z1 = -8.48
+  fcg_z2 = -4.64
+  fcg_z3 =  8.48
+  fcg_r1 = 11.42
+  fcg_r2 = 19.18
+  fcg_t =  0.15
+  fcg_z = 28.8
+  sili_endcap_config = 1
+$end
+c------------------ the following block is for the VTX/FVTX space frame: ----------------
+$sili_ec_par
+  sili_ec_sf_z   = -19.68, 19.68
+  sili_ec_sf_rmn = 21.68
+  sili_ec_sf_rmx = 21.79
+  sili_ec_pl_rmn = 21.81
+  sili_ec_pl_thk = 0.01524
+  sili_ec_rh_thk = 0.3175
+  sili_ec_alm_thk = 0.00508
+$end
+c------------------ the following block is for the FVTX: -----------------
+$sili_endcap_par
+  sili_endcap_z     = -38.20, -32.17, -26.14, -20.11, 20.11, 26.14, 32.17, 38.20
+  panthk = 0.30
+  stagger =  -1.0
+  wedges = 48
+  bwedge_lowx = 1.856
+  bwedge_highx = 5.164
+  bwedge_len = 13.6
+  swedge_lowx = 1.849
+  swedge_highx = 3.864
+  swedge_len = 6.048
+  bsil_lowx = .8774
+  bsil_highx = 2.5394
+  bsil_len = 12.6785
+  ssil_lowx = .8774
+  ssil_highx = 1.5326
+  ssil_len = 4.9985
+  back_lowx = 1.529
+  back_highx = 3.314
+  sback_lowx = 1.529
+  sback_highx = 2.3
+  back_planthk = .156
+  hdithk = 0.044
+  silthk = .03
+  chiplen = .92
+  chipwid = .28
+  chipthk = .03
+  bchipoff=1.05
+  schipoff=0.825
+  rinner = 3.45
+  support_thk=.625
+  bsic_lowx = .344384
+  bsic_highx = 1.16149
+  bsic_len = 12.48
+  bsic_posx = .376269
+  bsic_posz = -.01026
+  ssic_lowx = .344384
+  ssic_highx = .658656
+  ssic_len = 4.8
+  ssic_posx = 0.250626
+  ssic_posz = -0.00613
+  sili_endcap_strip_on = 0
+  sili_use_survey = 0
+  sili_deltas_file = 'alignment_skip.txt'
+$end
+c------------------ the following block is for tof west ------------
+$tfw_par 
+  nPanels             = 4
+  R                   = 477.606
+  tfw_Length          = 192.405,192.405,192.405,192.405   
+  tfw_Width           =  92.639, 92.639, 92.639, 92.639
+  tfw_Thick           =   7.468,7.468,7.468,7.468
+  azym                = 0.00,0.00,22.50,22.50
+$end   
+c------------------ the following block is for tof -----------------
+$tof_par
+  TOFL_rpos      =  503.00
+  TFPN_dimen     =    7.87,    98.50,  24.42464
+  TFPN_panel0    = -503.45,   -96.20,  -195.743
+                   -503.53,   -96.21,  -147.483
+                   -502.98,    96.26,  -195.471
+  TFPN_panel1    = -503.53,   -96.21,  -146.380
+                   -503.62,   -96.22,   -98.112
+                   -503.00,    96.25,  -146.141
+  TFPN_panel2    = -503.62,   -96.22,   -97.012
+                   -503.70,   -96.23,   -48.752
+                   -503.02,    96.24,   -97.091
+  TFPN_panel3    = -503.70,   -96.23,   -48.112
+                   -503.79,   -96.24,    -0.148
+                   -503.04,    96.23,   -48.201
+  TFPN_panel4    = -503.53,   -96.58,     1.675
+                   -503.50,   -96.57,    49.935
+                   -502.96,    95.88,     2.278
+  TFPN_panel5    = -503.50,   -96.56,    51.365
+                   -503.48,   -96.56,    99.625
+                   -502.96,    95.90,    51.328
+  TFPN_panel6    = -503.48,   -96.56,   100.265
+                   -503.45,   -96.56,   148.525
+                   -502.97,    95.90,   100.228
+  TFPN_panel7    = -503.45,   -96.56,   149.441
+                   -503.42,   -96.55,   197.701
+                   -502.98,    95.90,   149.630
+  TFPN_panel8    = -428.43,  -281.40,   -47.955
+                   -428.44,  -281.39,    -0.305
+                   -502.46,  -103.79,   -47.632
+  TFPN_panel9    = -428.16,  -281.34,     2.365
+                   -428.03,  -281.28,    50.625
+                   -502.34,  -103.75,     1.995
+  TFPN_nslat     =    96
+  npnl_sector0   =     2
+  npnl_sector1   =     8
+  npnl_sector2   =     0
+  color_tof      =     4
+  med_tof        =   710
+$end
+c------------------ the following block is for ... -----------------
+$trd_par
+  WestArm = 0
+  EastArm  = 1
+  Nsect    = 4
+  R0       = 424.2
+  ThRad    = 7.065
+  ThXe     = 3.7032
+  AngS     = 11.25
+  Ltec     = 1, 2, 3, 4, 5, 6
+  ThickF   = 1.94
+  ThickX   = 6.35
+  ThickZ   = 0.6
+  Ysup     = 3.5
+  ThickS   = .05
+  ThickS1  = .076
+  ThSLU    = .3
+  ThStr    = .1
+  ThWin    = .0050
+  ThWS     = .076
+  XWS      = 2.54
+  SST      = 25.4
+  ZszO     = 310.9453, 318.6553, 326.3653
+             334.0753, 341.7853, 349.4953
+  trdupgrade	= 1
+$end
+c----------------------------- end of namelist file ----------------------
+c the following lists are obsolete and were removed Oct 2015 HvH:
+c    muw_par
+c    sili_endcap_old_par
+c    sili_ifvtx_par
+c    tzr_par
+c    itr_par
+c    ncc_coord    
+c    rlt_coord

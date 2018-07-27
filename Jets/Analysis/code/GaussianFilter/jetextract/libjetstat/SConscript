@@ -1,0 +1,22 @@
+# -*- mode: python; -*-
+
+import os
+
+Import('env')
+
+libjetstat_env = env.Clone()
+
+libjetstat_env.Prepend(CPPPATH = [
+    os.path.join('#', 'src', 'libjetbase'),
+    os.path.join('#', 'src', 'libjetevent'),
+    os.path.join('#', 'src', 'libjetrec'),
+    os.path.join('#', 'src', 'libjetstat')])
+
+filelist = [
+    'ert.cc', 'jet.cc', 'event.cc', 'matching.cc' ]
+
+if '-ipo' in env['CXXFLAGS']:
+    env['LIBRARY_SOURCE'] += map(
+        lambda f: os.path.join('#', 'libjetstat', f), filelist)
+else:
+    libjetstat_env.StaticLibrary('jetstat', filelist)

@@ -1,0 +1,28 @@
+AUTOMAKE_OPTIONS = foreign
+
+INCLUDES = -I. -I$(srcdir) -I$(includedir) -I$(OFFLINE_MAIN)/include -I$(ROOTSYS)/include
+
+lib_LTLIBRARIES = \
+  libFakeJetStudy.la 
+
+noinst_HEADERS = \
+  FakeJetStudyLinkDef.h
+
+include_HEADERS = \
+  FakeJetStudy.h
+
+libFakeJetStudy_la_SOURCES = \
+  FakeJetStudy.C \
+  FakeJetStudy_Dict.C
+
+libFakeJetStudy_la_LIBADD = $(OFFLINE_MAIN)/lib -lphool -lPHPythia -L$(ROOTSYS)/lib -lPhysics -lHist -lTree -lHepMC
+
+# Rule for generating CINT dictionaries from class headers.
+FakeJetStudy_Dict.C: \
+  FakeJetStudy.h \
+  FakeJetStudyLinkDef.h
+	rootcint -f $@ -c $(DEFAULT_INCLUDES) $(INCLUDES) $^
+
+clean-local:
+	rm -f *Dict*
+

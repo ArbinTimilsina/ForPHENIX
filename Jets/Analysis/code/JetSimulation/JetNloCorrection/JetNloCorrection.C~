@@ -1,0 +1,367 @@
+//General PHENIX tools
+#include <PHCompositeNode.h>
+#include <PHNodeIterator.h>
+#include <PHNodeReset.h>
+#include <PHIODataNode.h>
+#include <phool.h>
+#include <getClass.h>
+#include <RunHeader.h>
+
+//HepMc tools
+#include <HepMC/GenEvent.h>
+
+//Fun4All tools
+#include <Fun4AllServer.h>
+#include <Fun4AllHistoManager.h>
+#include <Fun4AllReturnCodes.h>
+
+//PHPythia tools
+#include <PHPythiaHeader.h>
+#include <PHPyCommon.h>
+#include <PHPythiaContainer.h>
+
+#if ROOT_VERSION_CODE >= ROOT_VERSION(5,15,8)
+#include <TMCParticle.h>
+#else
+#include <TMCParticle6.h>
+#endif
+
+//C tools
+#include <cstdlib>
+#include <stdexcept>
+#include <iomanip>
+#include <vector>
+#include <algorithm> // remove and remove_if
+
+//Root tools
+#include <TH1.h>
+#include <TH2.h>
+#include <TFile.h>
+#include <TVector3.h>
+#include <TLorentzVector.h>
+#include <TNtuple.h>
+
+//FastJet tools
+#include <fastjet/JetDefinition.hh>
+#include <fastjet/PseudoJet.hh>
+#include <fastjet/ClusterSequence.hh>
+
+//My source file
+#include "JetNloCorrection.h"
+
+using namespace std;
+using namespace findNode;
+using namespace fastjet;
+
+//================================ Constructor ================================
+//Here we can initiate some variables
+JetNloCorrection::JetNloCorrection()
+    : SubsysReco("JetNloCorrection")
+{
+    writeTree = false;
+
+    return;
+}
+
+int JetNloCorrection::Init(PHCompositeNode *topNode)
+{
+    //Output file name
+    outfile = new TFile("JetNloCorrection.root", "RECREATE");
+
+    //*****************************************************************************************************************************
+    //*****************************************************************************************************************************
+    //Histograms
+    //*****************************************************************************************************************************
+    //General
+    hEvents = new TH1F("hEvents", "Number of events", 2, 0, 2);
+
+    hPtParton = new TH1F("hPtParton", "p_{T} of Parton Jets",
+                         NPTBINS_FINAL, PTBINS_FINAL);
+
+    hPtParticle = new TH1F("hPtParticle", "p_{T} of Particle Jets",
+                           NPTBINS_FINAL, PTBINS_FINAL);
+
+    //*****************************************************************************************************************************
+    //*****************************************************************************************************************************
+    //nTuples
+    //*****************************************************************************************************************************
+    if(writeTree)
+        {
+            pythiaParton = new TTree("pythiaParton", "Partons of Pythia");
+            pythiaParton->Branch("pythiaParton", &pythia_parton_list);
+
+            pythiaParticle = new TTree("pythiaParticle", "Particles of Pythia");
+            pythiaParticle->Branch("pythiaParticle", &pythia_particle_list);
+
+            pythiaPartonJet = new TTree("pythiaPartonJet", "Jet reconstructed from partons of Pythia");
+            pythiaPartonJet->Branch("pythiaPartonJet", &pythia_parton_jet_list);
+
+            pythiaParticleJet = new TTree("pythiaParticleJet", "Jet reconstructed form particles of Pythia");
+            pythiaParticleJet->Branch("pythiaParticleJet", &pythia_particle_jet_list);
+        }
+    //*****************************************************************************************************************************
+    return 0;
+}
+
+int JetNloCorrection::InitRun(PHCompositeNode *topNode)
+{
+    nRunEvents = 0;
+
+    return EVENT_OK;
+}
+
+int JetNloCorrection::ResetEvent(PHCompositeNode *topNode)
+{
+    pythia_parton_list.clear();
+    pythia_particle_list.clear();
+
+    pythia_parton_jet_list.clear();
+    pythia_particle_jet_list.clear();
+
+    return EVENT_OK;
+}
+
+
+int JetNloCorrection::process_event(PHCompositeNode *topNode)
+{
+    nRunEvents++;
+    if (nRunEvents % 1000 == 0)
+        {
+            cout << "Events = " << nRunEvents << endl;
+        }
+
+    phpythia = getClass<PHPythiaContainer> (topNode, "PHPythia");
+    if (!phpythia)
+        {
+            cout << "No PHPythia! No sense continuing" << endl;
+            exit(1);
+        }
+
+    //*****************************************************************************************************************************
+    //Partons
+    //*****************************************************************************************************************************
+    GetParton(pythia_parton_list);
+
+    //*****************************************************************************************************************************
+    //Get Necessary Histograms
+    //*****************************************************************************************************************************
+    GetAntiKtParton(pythia_parton_list, pythia_parton_jet_list);
+    for(int t = 0; t < pythia_parton_jet_list.size(); t++)
+        {
+            float jetEta = pythia_parton_jet_list[t].eta;
+            float jetPhi = pythia_parton_jet_list[t].phi;
+            float jetPt = pythia_parton_jet_list[t].pT;
+
+            if(passPhenixAcceptance(jetEta, jetPhi))
+                {
+                    hPtParton->Fill(jetPt);
+                }
+        }
+
+
+    GetAntiKtParticle(topNode, pythia_particle_list, pythia_particle_jet_list);
+    for(int t = 0; t < pythia_particle_jet_list.size(); t++)
+        {
+            float jetEta = pythia_particle_jet_list[t].eta;
+            float jetPhi = pythia_particle_jet_list[t].phi;
+            float jetPt = pythia_particle_jet_list[t].pT;
+
+            if(passPhenixAcceptance(jetEta, jetPhi))
+                {
+                    hPtParticle->Fill(jetPt);
+                }
+        }
+
+
+    //*****************************************************************************************************************************
+    //Fill Trees
+    //*****************************************************************************************************************************
+    if(writeTree)
+        {
+            pythiaParton->Fill();
+            pythiaParticle->Fill();
+
+            pythiaPartonJet->Fill();
+            pythiaParticleJet->Fill();
+        }
+
+    // any other return code might lead to aborting the event or analysis
+    return 0;
+}
+
+int JetNloCorrection::End(PHCompositeNode *topNode)
+{
+    cout << endl;
+    cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Total events processed = " << nRunEvents << endl;
+
+    if(nRunEvents > 0)
+        {
+            cout << "This is the end. If everthing was ok, you will see this message: " << endl;
+            cout << "123ALLDONE321" << endl;
+        }
+    cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl << endl;
+
+    hEvents->SetBinContent(1, nRunEvents);
+
+    outfile->Write();
+    outfile->Close();
+
+    return 0;
+}
+
+
+
+void JetNloCorrection::GetParton(std::vector<particles>& parton_list)
+{
+    int npart = phpythia->size();
+    for (int ipart = 0; ipart < npart; ipart++)
+        {
+            TMCParticle *part = phpythia->getParticle(ipart);
+
+            //Save only collision products- MPI and hadronization turned off in pythia.cfg
+            bool passParton = ((phpythia->getLineNumber(part) > 8) && (part->GetParent() <= 8));
+            if(!passParton)
+                {
+                    continue;
+                }
+
+            float energy = part->GetEnergy();
+            TLorentzVector *fVector = new TLorentzVector(part->GetPx(), part->GetPy(), part->GetPz(), energy);
+            float eta   = fVector->Eta();
+            float theta = fVector->Theta();
+            float mom   = fVector->P();
+            float pT    = mom * sin(theta);
+            float eT    = energy * sin(theta);
+            float phi   = phiReduce(fVector->Phi());
+
+            //KF- falvor
+            int kf = part->GetKF();
+
+            TPythia6 *tpythia6 = new TPythia6();
+
+            int charge = tpythia6->Pychge(kf);
+            if (charge == 3)
+                {
+                    charge = 1;
+                }
+            if (charge == -3)
+                {
+                    charge = -1;
+                }
+
+            delete tpythia6;
+
+            int arm = 1;
+            if (phi > 1.57)
+                {
+                    arm = 0;
+                }
+
+            particles temp;
+            temp.arm         = arm;
+            temp.charge      = charge;
+
+            temp.energy      = energy;
+            temp.mom         = mom;
+            temp.pT          = pT;
+            temp.eT          = eT;
+            temp.px          = part->GetPx();
+            temp.py          = part->GetPy();
+            temp.pz          = part->GetPz();
+            temp.eta         = eta;
+            temp.phi         = phi;
+            temp.phiDC       = -999.9;
+
+            temp.ertTrigger  = false;
+
+            temp.id          = kf;
+            temp.jetPt       = -999.9;
+
+
+            parton_list.push_back(temp);
+        }
+}
+
+void JetNloCorrection::GetAntiKtParton(std::vector<particles> particle_list,
+                                       std::vector<jets>& antikt_jet_list)
+{
+    fastjet::JetDefinition *antikt = new fastjet::JetDefinition(fastjet::antikt_algorithm, 0.2, fastjet::E_scheme, fastjet::Best);
+
+    //Generate input for jet reconstuction
+    std::vector<fastjet::PseudoJet> jetParticles_all;
+    jetParticles_all.clear();
+
+    for (unsigned int h = 0; h < particle_list.size(); h++)
+        {
+            fastjet::PseudoJet pseudoCharged(particle_list[h].px,
+                                             particle_list[h].py,
+                                             particle_list[h].pz,
+                                             particle_list[h].energy);
+
+            jetParticles_all.push_back(pseudoCharged);
+        }
+
+    fastjet::ClusterSequence jetAll(jetParticles_all, *antikt);
+    std::vector<fastjet::PseudoJet> fastAll = jetAll.inclusive_jets();
+    for (unsigned int n = 0; n < fastAll.size(); n++)
+        {
+            fastjet::PseudoJet aFastJet = fastAll[n];
+
+            float jetPt  = aFastJet.perp();
+            float jetEta = aFastJet.pseudorapidity();
+            float jetPhi = phiReduce(aFastJet.phi());
+
+            vector<fastjet::PseudoJet> constituents = jetAll.constituents(aFastJet);
+            unsigned int nconst = constituents.size();
+
+            int arm = 1;
+            if (jetPhi > 1.57)
+                {
+                    arm = 0;
+                }
+            jets temp;
+            temp.arm           = arm;
+            temp.centralityBin = -99.9;
+            temp.pT            = jetPt;
+            temp.eta           = jetEta;
+            temp.phi           = jetPhi;
+            temp.nc            = (float)nconst;
+            temp.cf            = -99.9;
+            temp.nf            = -99.9;
+            temp.disc          = -99.39;
+
+            antikt_jet_list.push_back(temp);
+        }
+    delete antikt;
+}
+
+void JetNloCorrection::GetAntiKtParticle(PHCompositeNode *topNode,
+					 std::vector<particles>& particle_list,
+					 std::vector<jets>& antikt_jet_list)
+{
+    std::vector<particles> constituent_list;
+    constituent_list.clear();
+
+    //This is for regular pythia.cfg setting
+    JetTriggerPythia *jetTriggerPythia = new JetTriggerPythia(0.2, 0.0, 6.5, 0.0, 1.0, 1, false);
+    jetTriggerPythia->GetPythia(topNode, particle_list, antikt_jet_list, constituent_list, false);
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

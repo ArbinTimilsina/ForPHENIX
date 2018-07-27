@@ -1,0 +1,12 @@
+Universe       = vanilla
+Notification   = Error
+Initialdir     = $ENV(PWD)
+Executable     = $ENV(PWD)/forEMCalMatching.cmd
+Log            = $ENV(PWD)/forEMCalMatching_output.log
+Output         = $ENV(PWD)/forEMCalMatching_output.out
+Error          = $ENV(PWD)/forEMCalMatching_output.err
+Notify_user    = arbint@iastate.edu
+GetEnv         = True
++Experiment    = "phenix"
++Job_Type      = "cas"
+Queue

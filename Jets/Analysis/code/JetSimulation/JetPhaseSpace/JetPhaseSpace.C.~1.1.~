@@ -1,0 +1,524 @@
+//General PHENIX tools
+#include <PHCompositeNode.h>
+#include <PHNodeIterator.h>
+#include <PHNodeReset.h>
+#include <PHIODataNode.h>
+#include <phool.h>
+#include <getClass.h>
+#include <RunHeader.h>
+
+//Fun4All tools
+#include <Fun4AllServer.h>
+#include <Fun4AllHistoManager.h>
+#include <Fun4AllReturnCodes.h>
+
+//PHPythia tools
+#include <PHPyTrigger.h>
+#include <PHPythiaHeader.h>
+#include <PHPyCommon.h>
+#include <PHPythiaContainer.h>
+
+#if ROOT_VERSION_CODE >= ROOT_VERSION(5,15,8)
+#include <TMCParticle.h>
+#else
+#include <TMCParticle6.h>
+#endif
+
+//Root tools
+#include <TH1.h>
+#include <TH2.h>
+#include <TFile.h>
+#include <TNtuple.h>
+
+//For vertex during sim reco
+#include <VtxOut.h>
+
+//My source file
+#include "JetPhaseSpace.h"
+
+using namespace std;
+using namespace findNode;
+
+//================================ Constructor ================================
+//Here we can initiate some variables
+JetPhaseSpace::JetPhaseSpace()
+    : SubsysReco("JetPhaseSpace")
+{
+    nTotalEvents = 0;
+    treesFill = false;
+
+    return;
+}
+
+int JetPhaseSpace::Init(PHCompositeNode *topNode)
+{
+
+    //To access various nodes
+    se = Fun4AllServer::instance();
+    rc = recoConsts::instance();
+
+    //For data code
+    jetAnalyzer = new JetAnalyzer("dummyFile.root");
+    jetAnalyzer->SetData(true);
+    jetAnalyzer->SetCuAu(false);
+    jetAnalyzer->MyInit();
+
+    //For PYTHIA trigger
+    jetTriggerPythia = new JetTriggerPythia(0.2, 3.0, 10.0, 0.0, 1.0, 1);
+
+    //Output file name
+    outfile = new TFile("JetPhaseSpace.root", "RECREATE");
+
+    //*******************************************************************************************************
+    //*******************************************************************************************************
+    //Histograms
+    //*******************************************************************************************************
+    hEvents = new TH1F("hEvents", "Number of events", 2, 0, 2);
+
+    hVertexPythia = new TH1F("hVertexPythia", "Vertex Distribution for PYTHIA", 40 * 2, -20, 20);
+    hPtTrueJet = new TH1F("hPtTrueJet", "p_{T} of True Jets of PYTHIA",
+                          NPTBINS_FINAL, PTBINS_FINAL);
+    hPtRecoJet = new TH1F("hPtRecoJet", "p_{T} of Reco Jets",
+                          NPTBINS_FINAL, PTBINS_FINAL);
+    hDistance = new TH1F("hDistance", "#DeltaR between True Jets and Reco Jets",
+                         200, 0.0, 0.2);
+    hPtMatchedJet = new TH1F("hPtMatchedJet", "p_{T} of Reco Matched Jets",
+                             NPTBINS_FINAL, PTBINS_FINAL);
+
+    hTotalPhi = new TH1F("hTotalPhi", "Phi of true jets",
+                         600, -2.0, 5.0);
+    hPassPhi = new TH1F("hPassPhi", "Phi of matched jets",
+                        600, -2.0, 5.0);
+
+    for (unsigned int c = 0; c < 5; c++)
+        {
+            hTotalEta[c] = new TH1F(Form("hTotalEta_%u", c), "Eta of true jets",
+                                    200, -0.5, 0.5);
+
+            hPassEta[c] = new TH1F(Form("hPassEta_%u", c), "Eta of matched jets",
+                                   200, -0.5, 0.5);
+        }
+
+    //*******************************************************************************************************
+    //*******************************************************************************************************
+    //Trees
+    //*******************************************************************************************************
+    if(treesFill)
+        {
+            tPythiaParticle = new TTree("tPythiaParticle", "Final particles of PYTHIA in Run 12 PHENIX acceptance");
+            tPythiaParticle->Branch("tPythiaParticle", &pythia_particle_list);
+
+            tPythiaTrueJet = new TTree("tPythiaTrueJet", "True Jet of Pythia");
+            tPythiaTrueJet->Branch("tPythiaTrueJet", &pythia_true_jet_list);
+
+            //*******************************************************************************************************
+            tPisaRecoAllTrack = new TTree("tPisaRecoAllTrack", "Simulated All Tracks");
+            tPisaRecoAllTrack->Branch("tPisaRecoAllTrack", &pisa_reco_all_track_list);
+
+            tPisaRecoAllCluster = new TTree("tPisaRecoAllCluster", "Simulated All Clusters");
+            tPisaRecoAllCluster->Branch("tPisaRecoAllCluster", &pisa_reco_all_cluster_list);
+
+            tPisaRecoGoodTrack = new TTree("tPisaRecoGoodTrack", "Simulated Tracks with all cuts");
+            tPisaRecoGoodTrack->Branch("tPisaRecoGoodTrack", &pisa_reco_good_track_list);
+
+            tPisaRecoGoodCluster = new TTree("tPisaRecoGoodCluster", "Simulated Clusters with all cuts");
+            tPisaRecoGoodCluster->Branch("tPisaRecoGoodCluster", &pisa_reco_good_cluster_list);
+
+            tPisaRecoGoodParticle = new TTree("tPisaRecoGoodParticle", "Simulated Tracks and Clusters with all cuts");
+            tPisaRecoGoodParticle->Branch("tPisaRecoGoodParticle", &pisa_reco_good_particle_list);
+
+            tPisaRecoJet = new TTree("tPisaRecoJet", "Reconstrctred Jet from simulated Tracks and Clusters with all cuts");
+            tPisaRecoJet->Branch("tPisaRecoJet", &pisa_reco_jet_list);
+
+            tPisaRecoMatchedJet = new TTree("tPisaRecoMatchedJet", "Matched Jet from simulated Tracks and Clusters with all cuts");
+            tPisaRecoMatchedJet->Branch("tPisaRecoMatchedJet", &pisa_reco_matched_jet_list);
+        }
+
+    return EVENT_OK;
+}
+
+int JetPhaseSpace::InitRun(PHCompositeNode *topNode)
+{
+    return EVENT_OK;
+}
+
+int JetPhaseSpace::ResetEvent(PHCompositeNode *topNode)
+{
+    pythia_particle_list.clear();
+    pythia_true_jet_list.clear();
+
+    pisa_reco_all_track_list.clear();
+    pisa_reco_all_cluster_list.clear();
+
+    pisa_reco_good_track_list.clear();
+    pisa_reco_good_cluster_list.clear();
+    pisa_reco_good_particle_list.clear();
+    pisa_reco_jet_list.clear();
+    pisa_reco_matched_jet_list.clear();
+
+    return EVENT_OK;
+}
+
+
+int JetPhaseSpace::process_event(PHCompositeNode *topNode)
+{
+    //Get True Jet
+    getPythiaTrueJet(topNode,
+                     pythia_particle_list, pythia_true_jet_list,
+                     hVertexPythia);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+
+    //Get PISA+Reco Jets with all track+cluster cuts
+    getPisaRecoJet(topNode,
+                   pisa_reco_all_track_list, pisa_reco_all_cluster_list,
+                   pisa_reco_good_track_list, pisa_reco_good_cluster_list, pisa_reco_good_particle_list,
+                   pisa_reco_jet_list,
+                   hPtRecoJet);
+
+    getMatchedJet(pythia_true_jet_list, pisa_reco_jet_list, pisa_reco_matched_jet_list,
+                  hPtTrueJet, hDistance, hPtMatchedJet,
+                  hTotalPhi, hPassPhi, hTotalEta, hPassEta);
+
+    ///////////////////////////////////////////////////////////////////////////////////////////////
+    fillTrees(treesFill);
+
+    nTotalEvents++;
+
+    return 0;
+}
+
+void JetPhaseSpace::getPythiaTrueJet(PHCompositeNode *topNode,
+                                     std::vector<particles>& particle_list,
+                                     std::vector<jets>& true_jet_list,
+                                     TH1F *hVertex)
+{
+    PHCompositeNode *pythiaNode = se->topNode(rc->get_CharFlag("PHPYTHIA_TOPNODE"));
+
+    //Details about the event: event_gen/src/PHPythia/PHPythia/PHPythiaHeader.h
+    PHPythiaHeader *phpythiaheader = findNode::getClass<PHPythiaHeader>(pythiaNode, "PHPythiaHeader");
+    if (!phpythiaheader)
+        {
+            cout << "No PHPythiaHeader! No sense continuing" << endl;
+            exit(1);
+        }
+
+    zVertex = phpythiaheader->GetPrimaryVertexZ();
+    zVertex = zVertex * MM2CM;
+    hVertex->Fill(zVertex);
+
+    zVertex = fabs(zVertex);
+
+    std::vector<particles> constituent_list;
+    constituent_list.clear();
+    jetTriggerPythia->GetPythia(pythiaNode, particle_list, true_jet_list, constituent_list, false);
+}
+
+void JetPhaseSpace::getPisaRecoJet(PHCompositeNode *topNode,
+                                   std::vector<tracks>& all_track_list,
+                                   std::vector<clusters>& all_cluster_list,
+                                   std::vector<tracks>& good_track_list,
+                                   std::vector<clusters>& good_cluster_list,
+                                   std::vector<particles>& good_particle_list,
+                                   std::vector<jets>& sim_jet_list,
+                                   TH1F *hPtReco)
+{
+    PHCompositeNode *pisaRecoNode = se->topNode(rc->get_CharFlag("PISARECO_TOPNODE"));
+
+    //For ZVertex used in reconstruction
+    //https://www.phenix.bnl.gov/viewvc/viewvc.cgi/phenix/offline/packages/vtx/VtxOut.h?revision=1.25&view=co
+    VtxOut *vertexOut = getClass<VtxOut>(pisaRecoNode, "VtxOut");
+    if (!vertexOut)
+        {
+            cout << "No PHGlobal!  No sense continuing" << endl;
+            exit(1);
+        }
+
+    float zvertex = vertexOut->get_ZVertex();
+
+    //Get Tracks
+    jetAnalyzer->GetTracks(pisaRecoNode, all_track_list);
+
+    //Get Clusters
+    jetAnalyzer->SetData(false);
+    jetAnalyzer->GetClusters(pisaRecoNode, all_cluster_list, zvertex);
+
+    jetAnalyzer->GetParticles(all_track_list, all_cluster_list, good_track_list, good_cluster_list, good_particle_list);
+
+    std::vector<particles> constituent_list;
+    constituent_list.clear();
+    jetAnalyzer->GetAntiKtCommon(good_particle_list, 0.2, 3.0, 10.0, 0.2, 0.7, sim_jet_list, constituent_list, false);
+
+    for(unsigned int s = 0; s < sim_jet_list.size(); s++)
+        {
+            float pT = sim_jet_list[s].pT;
+            hPtReco->Fill(pT);
+        }
+}
+
+void JetPhaseSpace::getMatchedJet( std::vector<jets> true_jet_list,
+                                   std::vector<jets> good_jet_list,
+                                   std::vector<jets>& matched_jet_list,
+                                   TH1F *hPtTrue,
+                                   TH1F *hDistance,
+                                   TH1F *hPtMatched,
+                                   TH1F *hTotalPhi,
+                                   TH1F *hPassPhi,
+                                   TH1F *hTotalEta[5],
+                                   TH1F *hPassEta[5])
+{
+    std::vector<jetPair> jet_pair_list;
+    jet_pair_list.clear();
+    unsigned int idTrue = 0;
+    for(unsigned int t = 0; t < true_jet_list.size(); t++)
+        {
+            idTrue++;
+            int tArm         = true_jet_list[t].arm;
+            float tPt        = true_jet_list[t].pT;
+            float tEta       = true_jet_list[t].eta;
+            float tPhi       = true_jet_list[t].phi;
+            float tNc        = true_jet_list[t].nc;
+            float tCf        = true_jet_list[t].cf;
+            float tNf        = true_jet_list[t].nf;
+            float tDisc      = true_jet_list[t].disc;
+
+            hPtTrue->Fill(tPt);
+
+            if(tPt > minPt)
+                {
+                    if(isNominalEta(zVertex, tEta))
+                        {
+                            hTotalPhi->Fill(tPhi);
+                        }
+
+                    if(isNominalPhi(tPhi))
+                        {
+                            if(zVertex >= 0 && zVertex <= 2)
+                                {
+                                    hTotalEta[0]->Fill(tEta);
+                                }
+                            if(zVertex >= 0 && zVertex <= 4)
+                                {
+                                    hTotalEta[1]->Fill(tEta);
+                                }
+                            if(zVertex >= 0 && zVertex <= 6)
+                                {
+                                    hTotalEta[2]->Fill(tEta);
+                                }
+                            if(zVertex >= 0 && zVertex <= 8)
+                                {
+                                    hTotalEta[3]->Fill(tEta);
+                                }
+                            if(zVertex >= 0 && zVertex <= 10)
+                                {
+                                    hTotalEta[4]->Fill(tEta);
+                                }
+                        }
+                }
+
+            unsigned int idGood = 0;
+            for(unsigned int g = 0; g < good_jet_list.size(); g++)
+                {
+                    idGood++;
+                    float gArm       = good_jet_list[g].arm;
+                    float gPt        = good_jet_list[g].pT;
+                    float gEta       = good_jet_list[g].eta;
+                    float gPhi       = good_jet_list[g].phi;
+                    float gNc        = good_jet_list[g].nc;
+                    float gCf        = good_jet_list[g].cf;
+                    float gNf        = good_jet_list[g].nf;
+                    float gDisc      = good_jet_list[g].disc;
+
+                    if (tArm == gArm)
+                        {
+                            float deltaR = jetAnalyzer->dR(tEta, gEta, tPhi, gPhi);
+
+                            jetPair tempPair;
+                            tempPair.id.first    = idTrue;
+                            tempPair.id.second   = idGood;
+                            tempPair.pT.first    = tPt;
+                            tempPair.pT.second   = gPt;
+                            tempPair.eta.first   = tEta;
+                            tempPair.eta.second  = gEta;
+                            tempPair.phi.first   = tPhi;
+                            tempPair.phi.second  = gPhi;
+                            tempPair.nc.first    = tNc;
+                            tempPair.nc.second   = gNc;
+                            tempPair.cf.first    = tCf;
+                            tempPair.cf.second   = gCf;
+                            tempPair.nf.first    = tNf;
+                            tempPair.nf.second   = gNf;
+                            tempPair.disc.first  = tDisc;
+                            tempPair.disc.second = gDisc;
+                            tempPair.arm         = tArm;
+                            tempPair.deltaR      = deltaR;
+
+                            jet_pair_list.push_back(tempPair);
+                        }
+                }
+        }
+
+    //Sort pair by ascending order of deltaR
+    std::sort(jet_pair_list.begin(), jet_pair_list.end(), sortPair());
+
+    //Require 1 to 1 matching- and save as unique pair
+    std::vector<jetPair> unique_pair_list;
+    while (jet_pair_list.size())
+        {
+            unique_pair_list.push_back(jet_pair_list.front());
+            jet_pair_list.erase(std::remove_if(jet_pair_list.begin(), jet_pair_list.end(), removePairId(jet_pair_list.front())),
+                                jet_pair_list.end());
+        }
+
+    for(unsigned int u = 0; u < unique_pair_list.size(); u++)
+        {
+            float tPt = unique_pair_list[u].pT.first;
+            float tPhi = unique_pair_list[u].phi.first;
+            float tEta = unique_pair_list[u].eta.first;
+
+            float deltaR = unique_pair_list[u].deltaR;
+            hDistance->Fill(deltaR);
+            if (deltaR < minDeltaR)
+                {
+                    hPtMatched->Fill( unique_pair_list[u].pT.second);
+
+                    jets temp;
+                    temp.arm           = unique_pair_list[u].arm;
+                    temp.centralityBin = -1;
+                    temp.pT            = unique_pair_list[u].pT.second;
+                    temp.eta           = unique_pair_list[u].eta.second;
+                    temp.phi           = unique_pair_list[u].phi.second;
+                    temp.nc            = unique_pair_list[u].nc.second;
+                    temp.cf            = unique_pair_list[u].cf.second;
+                    temp.nf            = unique_pair_list[u].nf.second;
+                    temp.disc          = unique_pair_list[u].disc.second;
+
+                    matched_jet_list.push_back(temp);
+
+                    //Get the required plots
+                    if(tPt > minPt)
+                        {
+                            if(isNominalEta(zVertex, tEta))
+                                {
+                                    hPassPhi->Fill(tPhi);
+                                }
+
+                            if(isNominalPhi(tPhi))
+                                {
+                                    if(zVertex >= 0 && zVertex <= 2)
+                                        {
+                                            hPassEta[0]->Fill(tEta);
+                                        }
+                                    if(zVertex >= 0 && zVertex <= 4)
+                                        {
+                                            hPassEta[1]->Fill(tEta);
+                                        }
+                                    if(zVertex >= 0 && zVertex <= 6)
+                                        {
+                                            hPassEta[2]->Fill(tEta);
+                                        }
+                                    if(zVertex >= 0 && zVertex <= 8)
+                                        {
+                                            hPassEta[3]->Fill(tEta);
+                                        }
+                                    if(zVertex >= 0 && zVertex <= 10)
+                                        {
+                                            hPassEta[4]->Fill(tEta);
+                                        }
+                                }
+                        }
+
+                }
+        }
+}
+
+void JetPhaseSpace::fillTrees(bool what)
+{
+    if(what)
+        {
+            tPythiaParticle->Fill();
+            tPythiaTrueJet->Fill();
+
+            tPisaRecoAllTrack->Fill();
+            tPisaRecoAllCluster->Fill();
+
+            tPisaRecoGoodTrack->Fill();
+            tPisaRecoGoodCluster->Fill();
+            tPisaRecoGoodParticle->Fill();
+            tPisaRecoJet->Fill();
+            tPisaRecoMatchedJet->Fill();
+        }
+}
+
+int JetPhaseSpace::EndRun(const int runNumber)
+{
+    return EVENT_OK;
+}
+
+int JetPhaseSpace::End(PHCompositeNode *topNode)
+{
+    hEvents->SetBinContent(1, nTotalEvents);
+
+    cout << endl;
+    cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl;
+    cout << "Total events processed = " << nTotalEvents << endl;
+
+    if(nTotalEvents > 0)
+        {
+            cout << "This is the end. If everthing was ok, you will see this message: " << endl;
+            cout << "123ALLDONE321" << endl;
+        }
+    cout << "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++" << endl << endl;
+
+    outfile->Write();
+    outfile->Close();
+
+    return EVENT_OK;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

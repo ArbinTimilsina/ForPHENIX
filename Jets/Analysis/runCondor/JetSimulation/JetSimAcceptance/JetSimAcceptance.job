@@ -1,0 +1,14 @@
+Universe                = vanilla
+Notification            = Error
+Initialdir              = $ENV(PWD)
+Executable              = $ENV(PWD)/JetSimAcceptance.cmd
+Log                     = $ENV(PWD)/JetSimAcceptance_output.log
+Output                  = $ENV(PWD)/JetSimAcceptance_output.out
+Error                   = $ENV(PWD)/JetSimAcceptance_output.err
+PeriodicHold            = (NumJobStarts>=1 && JobStatus == 1)
+should_transfer_files   = YES
+when_to_transfer_output = ON_EXIT_OR_EVICT
+Notify_user             = arbint@iastate.edu
+GetEnv                  = True
++Job_Type               = "cas"
+Queue

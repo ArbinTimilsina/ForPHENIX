@@ -1,0 +1,12 @@
+Universe       = vanilla
+Notification   = Error
+Initialdir     = $ENV(PWD)
+Executable     = $ENV(PWD)/RunQA.cmd
+Log            = $ENV(PWD)/RunQA_output.log
+Output         = $ENV(PWD)/RunQA_output.out
+Error          = $ENV(PWD)/RunQA_output.err
+Notify_user    = arbint@iastate.edu
+GetEnv         = True
++Experiment    = "phenix"
++Job_Type      = "cas"
+Queue
